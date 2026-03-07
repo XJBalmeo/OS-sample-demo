@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IntentOS v1.0 — Full Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#060810; --surface:rgba(255,255,255,.03); --border:rgba(255,255,255,.07);
+  --accent:#00e5ff; --accent2:#7b6ff0; --accent3:#ff4f6a; --green:#00ff88; --yellow:#ffcc00;
+  --text:#c8d6f0; --dim:rgba(200,214,240,.4);
+  --glow:0 0 30px rgba(0,229,255,.15); --glow2:0 0 60px rgba(0,229,255,.25);
+  --mode-color:#00e5ff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100vh;width:100vw;overflow:hidden;cursor:none;}
+
+/* ── CURSOR ── */
+#cur{position:fixed;pointer-events:none;z-index:99999;width:22px;height:26px;filter:drop-shadow(0 0 5px rgba(0,229,255,.55));transition:filter .15s;}
+#cur svg{display:block;width:100%;height:100%;}
+
+/* ── BOOT ── */
+#boot{position:fixed;inset:0;z-index:9000;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+#boot.out{animation:bootOut 1s ease forwards;}
+@keyframes bootOut{to{opacity:0;pointer-events:none;}}
+.b-hex{position:relative;width:90px;height:90px;display:flex;align-items:center;justify-content:center;animation:bIn 1s cubic-bezier(.16,1,.3,1) both;}
+@keyframes bIn{from{opacity:0;transform:scale(.8) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.b-hex svg{position:absolute;inset:0;width:100%;height:100%;}
+.b-inner{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;font-size:22px;z-index:1;box-shadow:0 0 40px rgba(0,229,255,.45);}
+.hex-r{stroke-dasharray:260;stroke-dashoffset:260;animation:dash 2s ease .4s forwards;}
+@keyframes dash{to{stroke-dashoffset:0;}}
+.b-title{font-size:40px;font-weight:800;letter-spacing:.15em;color:#fff;text-transform:uppercase;animation:bIn 1s .2s both;}
+.b-title em{color:var(--accent);font-style:normal;}
+.b-sub{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;margin-top:-6px;animation:fup .8s .8s both;}
+@keyframes fup{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.b-log{margin-top:44px;width:460px;font-family:'Space Mono',monospace;font-size:11px;display:flex;flex-direction:column;gap:5px;animation:fup .6s 1s both;}
+.b-line{display:flex;gap:12px;opacity:0;animation:lin .3s forwards;}
+@keyframes lin{to{opacity:1;}}
+.b-tag{font-size:10px;min-width:54px;text-align:right;text-transform:uppercase;letter-spacing:.06em;}
+.b-tag.ok{color:var(--green);}.b-tag.load{color:var(--yellow);}.b-tag.init{color:var(--accent);}.b-tag.ready{color:var(--accent3);}
+.b-msg{color:rgba(200,214,240,.4);}
+.b-prog{margin-top:32px;width:340px;animation:fup .6s 1s both;}
+.b-pl{display:flex;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);margin-bottom:8px;letter-spacing:.1em;}
+.b-pt{height:2px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.b-pf{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));width:0%;transition:width .4s ease;box-shadow:0 0 10px rgba(0,229,255,.5);}
+.b-ver{position:absolute;bottom:18px;font-family:'Space Mono',monospace;font-size:10px;color:rgba(255,255,255,.1);letter-spacing:.15em;}
+
+/* ── DESKTOP ── */
+#desk{position:fixed;inset:0;z-index:100;background:var(--bg);opacity:0;transition:opacity .8s;pointer-events:none;}
+#desk.on{opacity:1;pointer-events:all;}
+.bg-grid{position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(0,229,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.025) 1px,transparent 1px);background-size:60px 60px;animation:gd 60s linear infinite;}
+@keyframes gd{to{background-position:60px 60px;}}
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;opacity:.18;animation:of 12s ease-in-out infinite alternate;}
+.o1{width:500px;height:500px;background:var(--accent2);top:-150px;left:-100px;}
+.o2{width:400px;height:400px;background:var(--accent);bottom:-100px;right:-80px;animation-delay:-4s;}
+.o3{width:300px;height:300px;background:var(--accent3);bottom:100px;left:30%;animation-delay:-8s;opacity:.1;}
+@keyframes of{to{transform:translate(30px,20px) scale(1.05);}}
+.scanlines{position:fixed;inset:0;pointer-events:none;z-index:200;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);opacity:.5;}
+
+/* ── TOPBAR ── */
+.topbar{position:fixed;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(6,8,16,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);z-index:500;}
+.logo{font-size:13px;font-weight:800;letter-spacing:.2em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.logo-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.tb-tabs{display:flex;gap:4px;}
+.tb-tab{padding:4px 12px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--dim);cursor:none;transition:all .2s;border:1px solid transparent;text-transform:uppercase;}
+.tb-tab:hover{color:var(--text);background:var(--surface);}
+.tb-tab.on{color:var(--accent);background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.2);}
+.tb-right{display:flex;align-items:center;gap:8px;}
+
+/* MODE BADGE */
+.mode-badge{display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:1px solid;transition:all .4s;cursor:none;}
+.mode-badge.normal{color:var(--accent);border-color:rgba(0,229,255,.3);background:rgba(0,229,255,.08);}
+.mode-badge.focused{color:var(--accent2);border-color:rgba(123,111,240,.4);background:rgba(123,111,240,.1);}
+.mode-badge.gaming{color:var(--accent3);border-color:rgba(255,79,106,.4);background:rgba(255,79,106,.1);}
+.mode-dot{width:5px;height:5px;border-radius:50%;animation:pulse 2s infinite;}
+.mode-badge.normal .mode-dot{background:var(--accent);box-shadow:0 0 6px var(--accent);}
+.mode-badge.focused .mode-dot{background:var(--accent2);box-shadow:0 0 6px var(--accent2);}
+.mode-badge.gaming .mode-dot{background:var(--accent3);box-shadow:0 0 6px var(--accent3);}
+
+/* SYSTEM TRAY */
+.tray{display:flex;align-items:center;gap:2px;}
+.ti{display:flex;align-items:center;gap:5px;padding:3px 7px;border-radius:6px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);cursor:none;transition:all .2s;position:relative;}
+.ti:hover{background:rgba(255,255,255,.06);color:var(--text);}
+.ti svg{width:13px;height:13px;flex-shrink:0;}
+.batt-b{width:20px;height:10px;border:1.5px solid rgba(200,214,240,.35);border-radius:2px;padding:1.5px;position:relative;}
+.batt-b::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:2.5px;height:5px;background:rgba(200,214,240,.3);border-radius:0 1px 1px 0;}
+.batt-f{height:100%;border-radius:1px;transition:width .5s;}
+.batt-f.hi{background:var(--green);}.batt-f.md{background:var(--yellow);}.batt-f.lo{background:var(--accent3);}
+.wifi-b{display:flex;align-items:flex-end;gap:2px;height:11px;}
+.wb{width:3px;border-radius:1px;background:rgba(200,214,240,.15);}
+.wb.on{background:var(--accent);}
+.wb1{height:4px;}.wb2{height:7px;}.wb3{height:10px;}.wb4{height:13px;}
+.t-sep{width:1px;height:14px;background:rgba(255,255,255,.08);margin:0 4px;}
+.t-clk{font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);padding:3px 6px;letter-spacing:.04em;}
+.t-date{font-size:10px;color:rgba(200,214,240,.28);margin-left:2px;}
+
+/* EDGE TABS */
+.edge{position:fixed;left:0;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;padding:10px 6px;background:rgba(6,8,16,.7);border-right:1px solid var(--border);backdrop-filter:blur(10px);border-radius:0 10px 10px 0;z-index:400;}
+.et{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:none;background:var(--surface);border:1px solid transparent;transition:all .2s;}
+.et:hover{border-color:rgba(0,229,255,.3);background:rgba(0,229,255,.08);}
+.et.on{border-color:rgba(0,229,255,.5);background:rgba(0,229,255,.1);}
+
+/* ── BASE CANVAS ── */
+#base{position:fixed;inset:44px 0 0 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:30px;transition:opacity .4s,transform .4s;}
+#base.off{opacity:0;transform:scale(.97);pointer-events:none;}
+
+.intent-lbl{font-size:11px;font-weight:700;letter-spacing:.3em;color:var(--dim);text-transform:uppercase;}
+
+/* CENTER SPOTTER */
+.sw{width:100%;max-width:700px;position:relative;}
+.sp{display:flex;align-items:center;background:rgba(255,255,255,.04);border:1px solid rgba(0,229,255,.3);border-radius:14px;padding:0 20px;height:62px;box-shadow:var(--glow),inset 0 1px 0 rgba(255,255,255,.06);transition:border-color .3s,box-shadow .3s;backdrop-filter:blur(20px);}
+.sp.on{border-color:rgba(0,229,255,.65);box-shadow:var(--glow2),inset 0 1px 0 rgba(255,255,255,.08);}
+.sp-ico{width:20px;height:20px;margin-right:14px;flex-shrink:0;opacity:.5;color:var(--accent);}
+.sp-in{flex:1;background:none;border:none;outline:none;font-family:'Syne',sans-serif;font-size:17px;font-weight:400;color:var(--text);cursor:none;}
+.sp-in::placeholder{color:rgba(200,214,240,.22);}
+.sp-hint{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);white-space:nowrap;margin-left:10px;}
+.key{display:inline-flex;align-items:center;justify-content:center;padding:2px 6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:4px;font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);margin-left:4px;}
+
+/* DROPDOWN */
+.drop{position:absolute;top:calc(100% + 10px);left:0;right:0;background:rgba(6,9,20,.98);border:1px solid rgba(0,229,255,.15);border-radius:12px;overflow:hidden;backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.75);z-index:600;}
+.si{display:flex;align-items:center;gap:12px;padding:11px 18px;cursor:none;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.04);}
+.si:last-child{border-bottom:none;}
+.si:hover,.si.hi{background:rgba(0,229,255,.07);}
+.si-ico{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.si-txt{flex:1;}
+.si-title{font-size:13px;font-weight:600;color:var(--text);}
+.si-sub{font-size:11px;color:var(--dim);font-family:'Space Mono',monospace;margin-top:1px;}
+.badge{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 8px;border-radius:20px;text-transform:uppercase;}
+.ba{background:rgba(123,111,240,.2);color:var(--accent2);border:1px solid rgba(123,111,240,.3);}
+.bf{background:rgba(0,229,255,.1);color:var(--accent);border:1px solid rgba(0,229,255,.2);}
+.bx{background:rgba(255,79,106,.1);color:var(--accent3);border:1px solid rgba(255,79,106,.2);}
+.bg2{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2);}
+
+/* CHIPS */
+.chips{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;}
+.chip{display:flex;align-items:center;gap:7px;padding:6px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;letter-spacing:.05em;color:var(--dim);cursor:none;transition:all .2s;text-transform:uppercase;}
+.chip:hover{border-color:rgba(0,229,255,.3);color:var(--accent);background:rgba(0,229,255,.06);box-shadow:0 0 16px rgba(0,229,255,.1);}
+
+/* WIDGETS */
+.wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;max-width:960px;}
+.wg{background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:none;transition:all .25s;backdrop-filter:blur(10px);position:relative;overflow:hidden;}
+.wg::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,229,255,.3),transparent);opacity:0;transition:opacity .3s;}
+.wg:hover{border-color:rgba(0,229,255,.2);transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.4);}
+.wg:hover::before{opacity:1;}
+.wh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.wt{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);}
+.wd{width:6px;height:6px;border-radius:50%;}
+.wd-c{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+.wd-p{background:var(--accent2);box-shadow:0 0 8px var(--accent2);}
+.wd-r{background:var(--accent3);box-shadow:0 0 8px var(--accent3);}
+.wd-g{background:var(--green);box-shadow:0 0 8px var(--green);}
+.hw-bars{display:flex;flex-direction:column;gap:7px;}
+.hw-row{display:flex;align-items:center;gap:8px;}
+.hw-lbl{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);width:30px;}
+.hw-tr{flex:1;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.hw-fi{height:100%;border-radius:2px;transition:width 1s ease;}
+.fc{background:var(--accent);}.fp{background:var(--accent2);}.fy{background:var(--yellow);}
+.hw-vl{font-family:'Space Mono',monospace;font-size:10px;color:var(--text);width:26px;text-align:right;}
+.obj-list{display:flex;flex-direction:column;gap:6px;}
+.obj-r{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:7px;transition:background .15s;cursor:none;}
+.obj-r:hover{background:rgba(255,255,255,.04);}
+.obj-n{flex:1;font-size:11px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.obj-t{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);}
+.pin-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.pb{display:flex;align-items:center;gap:7px;padding:7px 9px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:7px;font-size:10px;font-weight:600;color:var(--dim);cursor:none;transition:all .2s;text-transform:uppercase;letter-spacing:.04em;}
+.pb:hover{border-color:rgba(123,111,240,.4);color:var(--accent2);background:rgba(123,111,240,.06);}
+.notif-list{display:flex;flex-direction:column;gap:5px;}
+.notif{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:8px;background:rgba(255,255,255,.03);border-left:2px solid var(--accent);cursor:none;transition:background .15s;}
+.notif:hover{background:rgba(255,255,255,.05);}
+.notif-title{font-size:11px;font-weight:600;color:var(--text);}
+.notif-sub{font-size:10px;color:var(--dim);margin-top:1px;}
+.notif-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);white-space:nowrap;margin-left:auto;}
+
+/* MODE PANEL */
+#modePanel{position:fixed;top:54px;right:20px;width:260px;background:rgba(6,9,20,.98);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;z-index:800;backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.8);display:none;}
+#modePanel.show{display:block;animation:fup .2s ease both;}
+.mp-title{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:12px;}
+.mp-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);cursor:none;transition:all .2s;margin-bottom:6px;}
+.mp-opt:hover{background:rgba(255,255,255,.04);}
+.mp-opt.sel{border-color:var(--mode-color);background:rgba(0,229,255,.06);}
+.mp-opt.sel.focused-sel{border-color:var(--accent2);background:rgba(123,111,240,.08);}
+.mp-opt.sel.gaming-sel{border-color:var(--accent3);background:rgba(255,79,106,.08);}
+.mp-icon{font-size:18px;}
+.mp-info{flex:1;}
+.mp-name{font-size:12px;font-weight:700;color:var(--text);}
+.mp-desc{font-size:10px;color:var(--dim);margin-top:2px;}
+.mp-check{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;}
+.mp-opt.sel .mp-check{background:var(--accent);border-color:var(--accent);}
+.mp-opt.sel.focused-sel .mp-check{background:var(--accent2);border-color:var(--accent2);}
+.mp-opt.sel.gaming-sel .mp-check{background:var(--accent3);border-color:var(--accent3);}
+
+/* SECURITY PANEL */
+#secPanel{position:fixed;top:54px;right:20px;width:280px;background:rgba(6,9,20,.98);border:1px solid rgba(0,255,136,.2);border-radius:14px;padding:16px;z-index:800;backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.8);display:none;}
+#secPanel.show{display:block;animation:fup .2s ease both;}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+.sec-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+.sec-row:last-child{border-bottom:none;}
+.sec-label{flex:1;font-size:11px;color:var(--text);}
+.sec-status{font-family:'Space Mono',monospace;font-size:10px;display:flex;align-items:center;gap:4px;}
+.sec-on{color:var(--green);}
+.sec-warn{color:var(--yellow);}
+.toggle{width:28px;height:15px;border-radius:8px;background:rgba(0,255,136,.25);border:1px solid rgba(0,255,136,.4);position:relative;cursor:none;transition:all .2s;}
+.toggle::after{content:'';position:absolute;right:2px;top:2px;width:9px;height:9px;border-radius:50%;background:var(--green);transition:right .2s;}
+.toggle.off{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15);}
+.toggle.off::after{right:auto;left:2px;background:rgba(200,214,240,.3);}
+
+/* NOTIF TOAST */
+.toast{position:fixed;top:56px;left:50%;transform:translateX(-50%) translateY(-80px);background:rgba(6,9,20,.97);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:900;backdrop-filter:blur(20px);transition:transform .4s cubic-bezier(.16,1,.3,1);box-shadow:0 8px 30px rgba(0,0,0,.6);min-width:280px;max-width:420px;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast-icon{font-size:16px;flex-shrink:0;}
+.toast-txt{flex:1;}
+.toast-title{font-size:12px;font-weight:700;color:var(--text);}
+.toast-sub{font-size:11px;color:var(--dim);margin-top:1px;}
+.toast-close{font-size:14px;color:var(--dim);cursor:none;opacity:.6;}
+.toast-close:hover{opacity:1;}
+
+/* FREEZE BAR */
+.fbar{position:fixed;bottom:18px;right:20px;display:flex;align-items:center;gap:8px;padding:7px 13px;background:rgba(6,8,16,.9);border:1px solid rgba(0,229,255,.15);border-radius:8px;backdrop-filter:blur(10px);font-size:11px;color:var(--dim);font-family:'Space Mono',monospace;z-index:400;transition:opacity .3s;}
+.fbar.off{opacity:0;pointer-events:none;}
+
+/* ── APP VIEW ── */
+#appV{position:fixed;inset:44px 0 52px 0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .4s,transform .4s;transform:scale(1.015);}
+#appV.on{opacity:1;pointer-events:all;transform:scale(1);}
+.app-win{flex:1;margin:10px 10px 0;background:rgba(7,11,22,.97);border:1px solid rgba(255,255,255,.08);border-radius:14px 14px 0 0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 -4px 40px rgba(0,0,0,.6);}
+.app-tb{height:38px;padding:0 14px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.025);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;}
+.adots{display:flex;gap:5px;position:relative;}
+.ad{width:10px;height:10px;border-radius:50%;cursor:none;transition:filter .2s;}
+.ad:hover{filter:brightness(1.5);}
+.ad-c{background:#ff5f57;}.ad-m{background:#ffbd2e;}.ad-x{background:#27c93f;}
+.close-lbl{position:absolute;top:50%;left:calc(100% + 8px);transform:translateY(-50%);background:rgba(255,95,87,.15);border:1px solid rgba(255,95,87,.3);color:#ff5f57;font-family:'Space Mono',monospace;font-size:10px;padding:2px 8px;border-radius:4px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .2s;letter-spacing:.05em;}
+.adots:hover .close-lbl{opacity:1;}
+.app-name-bar{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.05em;margin-left:6px;}
+.app-body{flex:1;overflow:hidden;display:flex;}
+
+/* Code editor */
+.a-side{width:190px;flex-shrink:0;background:rgba(0,0,0,.35);border-right:1px solid rgba(255,255,255,.05);padding:10px 0;overflow-y:auto;}
+.as-sec{padding:4px 12px;font-size:10px;font-weight:700;letter-spacing:.2em;color:rgba(200,214,240,.2);text-transform:uppercase;margin-bottom:3px;}
+.as-item{padding:5px 12px;font-size:11px;color:var(--dim);cursor:none;transition:all .15s;display:flex;align-items:center;gap:7px;}
+.as-item:hover{background:rgba(255,255,255,.04);color:var(--text);}
+.as-item.on{color:var(--accent);background:rgba(0,229,255,.06);border-left:2px solid var(--accent);}
+.a-main{flex:1;padding:18px 22px;overflow-y:auto;}
+.cl{font-family:'Space Mono',monospace;font-size:12px;line-height:1.85;white-space:pre;}
+.ck{color:#c792ea}.cf{color:#82aaff}.cs{color:#c3e88d}.cn{color:#f78c6c}.cc{color:rgba(200,214,240,.28)}.cv{color:#89ddff}
+.ln{color:rgba(200,214,240,.18);user-select:none;margin-right:18px;min-width:22px;display:inline-block;text-align:right;}
+
+/* Browser app */
+.br-bar{height:42px;background:rgba(0,0,0,.3);border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:8px;padding:0 14px;flex-shrink:0;}
+.br-btn{padding:3px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:5px;font-size:11px;color:var(--dim);cursor:none;}
+.br-url{flex:1;height:26px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:5px;display:flex;align-items:center;padding:0 10px;font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);}
+.br-body{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+
+/* Terminal */
+.term-body{width:100%;height:100%;background:#000;padding:18px;font-family:'Space Mono',monospace;font-size:12px;overflow-y:auto;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── TASKBAR ── */
+#tbar{position:fixed;bottom:0;left:0;right:0;height:52px;background:rgba(3,5,13,.94);backdrop-filter:blur(28px);border-top:1px solid rgba(0,229,255,.12);display:flex;align-items:center;padding:0 12px;gap:8px;z-index:600;transform:translateY(100%);transition:transform .38s cubic-bezier(.16,1,.3,1);box-shadow:0 -8px 40px rgba(0,0,0,.55);}
+#tbar.up{transform:translateY(0);}
+.tb-pills{display:flex;gap:5px;align-items:center;flex-shrink:0;}
+.tpill{display:flex;align-items:center;gap:5px;padding:4px 10px;height:32px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:7px;font-size:11px;font-weight:600;color:var(--dim);cursor:none;transition:all .2s;white-space:nowrap;position:relative;}
+.tpill::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:14px;height:2px;background:var(--accent);border-radius:2px;opacity:0;transition:opacity .2s;}
+.tpill.run::after{opacity:1;}
+.tpill:hover{background:rgba(0,229,255,.07);border-color:rgba(0,229,255,.22);color:var(--text);}
+.tpill.cur{border-color:rgba(0,229,255,.38);color:var(--accent);background:rgba(0,229,255,.09);}
+.tdiv{width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0;}
+
+/* TB SPOTTER */
+.tb-sw{flex:1;position:relative;}
+.tb-sp{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:7px;padding:0 12px;height:32px;transition:all .2s;}
+.tb-sp:focus-within{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.04);box-shadow:0 0 18px rgba(0,229,255,.1);}
+.tb-ico{width:13px;height:13px;opacity:.35;flex-shrink:0;color:var(--accent);}
+.tb-in{flex:1;background:none;border:none;outline:none;font-family:'Syne',sans-serif;font-size:13px;color:var(--text);cursor:none;}
+.tb-in::placeholder{color:rgba(200,214,240,.2);}
+.tb-drop{position:absolute;bottom:calc(100% + 8px);left:0;right:0;background:rgba(5,8,18,.98);border:1px solid rgba(0,229,255,.15);border-radius:11px;overflow:hidden;backdrop-filter:blur(24px);box-shadow:0 -20px 60px rgba(0,0,0,.8);z-index:700;}
+.tb-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.tray-sm{display:flex;align-items:center;gap:2px;margin-right:4px;}
+.tb-btn{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border);font-size:11px;cursor:none;transition:all .2s;color:var(--dim);}
+.tb-btn:hover{border-color:rgba(0,229,255,.3);color:var(--accent);background:rgba(0,229,255,.07);}
+.tb-home{color:var(--accent)!important;border-color:rgba(0,229,255,.25)!important;background:rgba(0,229,255,.07)!important;font-size:13px!important;}
+.tb-home:hover{background:rgba(0,229,255,.18)!important;}
+
+/* PEEK */
+#peek{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:70px;height:4px;background:rgba(0,229,255,.2);border-radius:4px 4px 0 0;cursor:none;z-index:601;transition:all .3s;}
+#peek:hover{background:rgba(0,229,255,.5);height:5px;}
+#peek.off{opacity:0;pointer-events:none;}
+
+/* LAUNCH RING */
+#lring-wrap{position:fixed;inset:44px 0 0 0;pointer-events:none;z-index:800;display:flex;align-items:center;justify-content:center;}
+.lring{width:80px;height:80px;border-radius:50%;border:2px solid var(--accent);opacity:0;transform:scale(.5);box-shadow:0 0 40px rgba(0,229,255,.4);}
+.lring.go{animation:lp .55s ease forwards;}
+@keyframes lp{0%{opacity:1;transform:scale(.5)}100%{opacity:0;transform:scale(4)}}
+
+/* PREFETCH BAR */
+#prefetch{position:fixed;top:44px;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent));transform:scaleX(0);transform-origin:left;transition:transform .4s ease;z-index:501;box-shadow:0 0 8px rgba(0,229,255,.6);}
+#prefetch.go{transform:scaleX(1);}
+#prefetch.done{transition:opacity .3s .2s;opacity:0;}
+
+/* CLARIFY WIDGET */
+#clarify{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(6,9,20,.98);border:1px solid rgba(255,79,106,.25);border-radius:16px;padding:22px 24px;z-index:850;backdrop-filter:blur(24px);box-shadow:0 30px 80px rgba(0,0,0,.8);width:360px;opacity:0;pointer-events:none;transition:all .3s;}
+#clarify.show{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:all;}
+.cq-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.cq-sub{font-size:11px;color:var(--dim);margin-bottom:16px;font-family:'Space Mono',monospace;}
+.cq-opt{padding:10px 14px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);font-size:12px;color:var(--text);cursor:none;transition:all .2s;margin-bottom:7px;display:flex;align-items:center;gap:10px;}
+.cq-opt:last-child{margin-bottom:0;}
+.cq-opt:hover{background:rgba(255,79,106,.08);border-color:rgba(255,79,106,.3);color:var(--accent3);}
+
+/* ONBOARD OVERLAY */
+#onboard{position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s;}
+#onboard.show{opacity:1;pointer-events:all;}
+.ob-card{background:rgba(8,12,24,.97);border:1px solid rgba(0,229,255,.2);border-radius:20px;padding:36px 40px;max-width:500px;width:90%;box-shadow:0 40px 100px rgba(0,0,0,.9);text-align:center;}
+.ob-step{font-family:'Space Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px;}
+.ob-title{font-size:24px;font-weight:800;color:var(--text);margin-bottom:8px;}
+.ob-desc{font-size:13px;color:var(--dim);line-height:1.7;margin-bottom:24px;}
+.ob-demo{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);margin-bottom:24px;text-align:left;}
+.ob-btn{padding:10px 28px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.3);border-radius:8px;font-size:13px;font-weight:700;color:var(--accent);cursor:none;transition:all .2s;display:inline-block;}
+.ob-btn:hover{background:rgba(0,229,255,.2);border-color:rgba(0,229,255,.5);}
+.ob-dots{display:flex;gap:6px;justify-content:center;margin-top:20px;}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.15);}
+.ob-dot.on{background:var(--accent);}
+
+/* SETTINGS PANEL */
+#settingsPanel{position:fixed;top:54px;right:20px;width:300px;background:rgba(6,9,20,.98);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:16px;z-index:800;backdrop-filter:blur(24px);box-shadow:0 20px 60px rgba(0,0,0,.8);display:none;max-height:80vh;overflow-y:auto;}
+#settingsPanel.show{display:block;animation:fup .2s ease both;}
+.sp-sec{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06);}
+.sp-sec:first-child{margin-top:0;padding-top:0;border-top:none;}
+.sp-row{display:flex;align-items:center;gap:10px;padding:7px 0;}
+.sp-lbl{flex:1;font-size:12px;color:var(--text);}
+.sp-sub{font-size:10px;color:var(--dim);margin-top:1px;}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cur">
+  <svg id="ca" viewBox="0 0 22 26" fill="none"><path d="M2 2L2 20L6.5 15.5L9.5 22L12 21L9 14.5L15.5 14.5L2 2Z" fill="#e8f4ff" stroke="#00e5ff" stroke-width="1.2" stroke-linejoin="round"/></svg>
+  <svg id="ch" viewBox="0 0 20 24" fill="none" style="display:none"><path d="M7 10V4a1.5 1.5 0 013 0v6M7 10V8a1.5 1.5 0 00-3 0v5c0 3.314 2.686 6 6 6h1a5 5 0 005-5v-4a1.5 1.5 0 00-3 0M7 10a1.5 1.5 0 013 0M10 10v-1a1.5 1.5 0 013 0v1" stroke="#e8f4ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</div>
+
+<!-- BOOT -->
+<div id="boot">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+    <div class="b-hex">
+      <svg viewBox="0 0 90 90" fill="none"><polygon class="hex-r" points="45,5 83,25 83,65 45,85 7,65 7,25" stroke="rgba(0,229,255,0.55)" stroke-width="1.5" fill="none"/><polygon points="45,14 76,31 76,59 45,76 14,59 14,31" stroke="rgba(0,229,255,0.1)" stroke-width="1" fill="none"/></svg>
+      <div class="b-inner">⚡</div>
+    </div>
+    <div class="b-title">Intent<em>OS</em></div>
+    <div class="b-sub">Post-Syntax · Intent-Driven · v1.0</div>
+  </div>
+  <div class="b-log" id="bLog"></div>
+  <div class="b-prog">
+    <div class="b-pl"><span id="bStage">Initializing…</span><span id="bPct">0%</span></div>
+    <div class="b-pt"><div class="b-pf" id="bFill"></div></div>
+  </div>
+  <div class="b-ver">BUILD 2025.03.07 · LEAN-CORE ARCH · IRON-CLAD ENABLED · SECURE BOOT ✓</div>
+</div>
+
+<!-- DESKTOP -->
+<div id="desk">
+  <div class="bg-grid"></div>
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+  <div class="scanlines"></div>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo"><div class="logo-dot"></div>Intent<span style="color:var(--dim);font-weight:400">OS</span></div>
+    <div class="tb-tabs">
+      <div class="tb-tab on">Base</div>
+      <div class="tb-tab">Dev</div>
+      <div class="tb-tab">Research</div>
+      <div class="tb-tab">+</div>
+    </div>
+    <div class="tb-right">
+      <!-- Mode badge -->
+      <div class="mode-badge normal" id="modeBadge" onclick="toggleModePanel()">
+        <div class="mode-dot"></div>
+        <span id="modeLabel">Normal Mode</span>
+      </div>
+      <div class="t-sep"></div>
+      <!-- System tray -->
+      <div class="tray">
+        <div class="ti" id="tVol" title="Volume — click to mute">
+          <svg viewBox="0 0 16 16" fill="none"><path id="vIco" d="M2 5.5h2.5L8 3v10l-3.5-2.5H2V5.5z" fill="rgba(200,214,240,.55)"/><path id="vW1" d="M9.5 5.5a3 3 0 010 5" stroke="rgba(200,214,240,.55)" stroke-width="1.2" stroke-linecap="round" fill="none"/><path id="vW2" d="M11 3.5a5.5 5.5 0 010 9" stroke="rgba(200,214,240,.35)" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
+          <span id="volVal">75</span>
+        </div>
+        <div class="ti" title="Wi-Fi: IntentNet_5G">
+          <div class="wifi-b"><div class="wb wb1 on"></div><div class="wb wb2 on"></div><div class="wb wb3 on"></div><div class="wb wb4 on"></div></div>
+        </div>
+        <div class="ti" title="Battery">
+          <div class="batt-b"><div class="batt-f hi" id="bfill" style="width:78%"></div></div>
+          <span id="battVal">78%</span>
+        </div>
+        <div class="t-sep"></div>
+        <div class="t-clk"><span id="clk">--:--</span><span class="t-date" id="tDate"></span></div>
+      </div>
+      <div class="t-sep"></div>
+      <div class="tb-btn" onclick="toggleSec()" title="Iron-Clad Security" style="font-size:13px">🔒</div>
+      <div class="tb-btn" onclick="toggleSettings()" title="Settings" style="font-size:13px">⚙️</div>
+    </div>
+  </div>
+
+  <!-- EDGE TABS -->
+  <div class="edge">
+    <div class="et on" title="Base State">🏠</div>
+    <div class="et" title="Dev Workspace">💻</div>
+    <div class="et" title="Research">🔍</div>
+    <div class="et" title="Media">🎵</div>
+    <div class="et" title="Security" onclick="toggleSec()">🔒</div>
+  </div>
+
+  <!-- BASE CANVAS -->
+  <div id="base">
+    <div class="intent-lbl">Declare your intent</div>
+
+    <div class="sw">
+      <div class="sp" id="cSp">
+        <svg class="sp-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="sp-in" id="cIn" placeholder="What do you want to do?" autocomplete="off" spellcheck="false"/>
+        <div class="sp-hint"><span class="key">⌘</span><span class="key">Space</span></div>
+      </div>
+      <div class="drop" id="cDrop" style="display:none">
+        <div class="si hi" data-app="editor" data-label="Code Editor"><div class="si-ico" style="background:rgba(0,229,255,.1)">💻</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent)">Code Editor</span></div><div class="si-sub">IDE · syntax highlighting · explorer</div></div><div class="badge bf">App</div></div>
+        <div class="si" data-app="browser" data-label="Browser"><div class="si-ico" style="background:rgba(123,111,240,.15)">🌐</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent2)">Browser</span></div><div class="si-sub">Local + web navigation</div></div><div class="badge ba">App</div></div>
+        <div class="si" data-app="terminal" data-label="Terminal"><div class="si-ico" style="background:rgba(0,255,136,.07)">⚙️</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--green)">Terminal</span></div><div class="si-sub">System shell · intent commands</div></div><div class="badge bg2">System</div></div>
+        <div class="si" data-app="music" data-label="Music Player"><div class="si-ico" style="background:rgba(255,79,106,.1)">🎵</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent3)">Music Player</span></div><div class="si-sub">Local audio · sticky mode</div></div><div class="badge bx">App</div></div>
+        <div class="si" data-app="files" data-label="Object Store"><div class="si-ico" style="background:rgba(255,204,0,.1)">🗂️</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--yellow)">Object Store</span></div><div class="si-sub">Semantic file retrieval</div></div><div class="badge" style="background:rgba(255,204,0,.1);color:var(--yellow);border:1px solid rgba(255,204,0,.2)">Files</div></div>
+        <div class="si" data-action="clarify"><div class="si-ico" style="background:rgba(255,79,106,.1)">❓</div><div class="si-txt"><div class="si-title">Demo <span style="color:var(--accent3)">Clarification Widget</span></div><div class="si-sub">See how ambiguous prompts are handled</div></div><div class="badge bx">Demo</div></div>
+      </div>
+    </div>
+
+    <div class="chips">
+      <div class="chip" onclick="setMode('focused')">🧠 Focused Mode</div>
+      <div class="chip" onclick="setMode('gaming')">🎮 Gaming Mode</div>
+      <div class="chip" onclick="setMode('normal')">⚖️ Normal Mode</div>
+      <div class="chip">🔗 Relate Objects</div>
+      <div class="chip">📦 Archive</div>
+      <div class="chip">🔐 Secure</div>
+      <div class="chip">↗ Share</div>
+      <div class="chip">🔄 Convert</div>
+    </div>
+
+    <div class="wgrid">
+      <!-- System Load -->
+      <div class="wg">
+        <div class="wh"><div class="wt">System Load</div><div class="wd wd-c"></div></div>
+        <div class="hw-bars">
+          <div class="hw-row"><div class="hw-lbl">CPU</div><div class="hw-tr"><div class="hw-fi fc" id="cpuB" style="width:34%"></div></div><div class="hw-vl" id="cpuV">34%</div></div>
+          <div class="hw-row"><div class="hw-lbl">RAM</div><div class="hw-tr"><div class="hw-fi fp" id="ramB" style="width:58%"></div></div><div class="hw-vl" id="ramV">58%</div></div>
+          <div class="hw-row"><div class="hw-lbl">GPU</div><div class="hw-tr"><div class="hw-fi fy" id="gpuB" style="width:12%"></div></div><div class="hw-vl" id="gpuV">12%</div></div>
+          <div class="hw-row"><div class="hw-lbl">SSD</div><div class="hw-tr"><div class="hw-fi fc" id="ssdB" style="width:7%"></div></div><div class="hw-vl" id="ssdV">7%</div></div>
+        </div>
+      </div>
+      <!-- Recent Objects -->
+      <div class="wg">
+        <div class="wh"><div class="wt">Recent Objects</div><div class="wd wd-p"></div></div>
+        <div class="obj-list">
+          <div class="obj-r"><span>📊</span><div class="obj-n">db_schema.sql</div><div class="obj-t">2h</div></div>
+          <div class="obj-r"><span>📝</span><div class="obj-n">intentos_proposal.md</div><div class="obj-t">5h</div></div>
+          <div class="obj-r"><span>🖼️</span><div class="obj-n">ui_wireframe.png</div><div class="obj-t">1d</div></div>
+          <div class="obj-r"><span>📦</span><div class="obj-n">kernel_v0.3.2.tar</div><div class="obj-t">2d</div></div>
+        </div>
+      </div>
+      <!-- Pinned Intents -->
+      <div class="wg">
+        <div class="wh"><div class="wt">Pinned Intents</div><div class="wd wd-r"></div></div>
+        <div class="pin-grid">
+          <div class="pb" onclick="launchApp('terminal','Terminal')"><span>🧹</span> Clean</div>
+          <div class="pb" onclick="showToast('💾','Backup Started','Object Store snapshot created')"><span>💾</span> Backup</div>
+          <div class="pb" onclick="setMode('gaming')"><span>🎮</span> Game Mode</div>
+          <div class="pb" onclick="showToast('🚀','Deploy Triggered','Build pipeline initiated')"><span>🚀</span> Deploy</div>
+        </div>
+        <div style="margin-top:10px;background:rgba(255,79,106,.06);border:1px solid rgba(255,79,106,.18);border-radius:9px;padding:10px 12px;">
+          <div style="font-size:10px;color:var(--dim);margin-bottom:7px;">Did you mean…</div>
+          <div class="cq-opt" style="font-size:11px;padding:7px 10px;" onclick="launchApp('editor','Code Editor')">💻 Open Code Editor</div>
+          <div class="cq-opt" style="font-size:11px;padding:7px 10px;" onclick="launchApp('files','Object Store')">🗂️ Open Object Store</div>
+        </div>
+      </div>
+      <!-- Notifications -->
+      <div class="wg">
+        <div class="wh"><div class="wt">Intent Interrupts</div><div class="wd wd-g"></div></div>
+        <div class="notif-list">
+          <div class="notif"><span style="font-size:14px">📥</span><div><div class="notif-title">Download complete</div><div class="notif-sub">Open downloaded file?</div></div><div class="notif-time">now</div></div>
+          <div class="notif" style="border-left-color:var(--accent2)"><span style="font-size:14px">🔋</span><div><div class="notif-title">Battery at 20%</div><div class="notif-sub">Switch to power save?</div></div><div class="notif-time">2m</div></div>
+          <div class="notif" style="border-left-color:var(--green)"><span style="font-size:14px">🛡️</span><div><div class="notif-title">Self-Heal complete</div><div class="notif-sub">4 memory leaks patched</div></div><div class="notif-time">5m</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP VIEW -->
+  <div id="appV">
+    <div class="app-win">
+      <div class="app-tb">
+        <div class="adots">
+          <div class="ad ad-c" id="btnClose"></div>
+          <div class="close-lbl">✕ Close &amp; return to desktop</div>
+          <div class="ad ad-m"></div>
+          <div class="ad ad-x"></div>
+        </div>
+        <div class="app-name-bar" id="appNm">—</div>
+      </div>
+      <div class="app-body" id="appBd"></div>
+    </div>
+  </div>
+
+  <!-- TASKBAR -->
+  <div id="tbar">
+    <div class="tb-pills" id="tbPills"></div>
+    <div class="tdiv"></div>
+    <div class="tb-sw">
+      <div class="tb-sp">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="tb-in" id="tbIn" placeholder="Intent — open, find, run, switch…" autocomplete="off" spellcheck="false"/>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);white-space:nowrap"><span class="key">⌘</span><span class="key">K</span></div>
+      </div>
+      <div class="tb-drop" id="tbDrop" style="display:none">
+        <div class="si hi" data-app="browser" data-label="Browser"><div class="si-ico" style="background:rgba(123,111,240,.15)">🌐</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent2)">Browser</span></div><div class="si-sub">New tab</div></div><div class="badge ba">App</div></div>
+        <div class="si" data-app="terminal" data-label="Terminal"><div class="si-ico" style="background:rgba(0,255,136,.07)">⚙️</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--green)">Terminal</span></div><div class="si-sub">System shell</div></div><div class="badge bg2">System</div></div>
+        <div class="si" data-app="files" data-label="Object Store"><div class="si-ico" style="background:rgba(255,204,0,.1)">🗂️</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--yellow)">Object Store</span></div><div class="si-sub">Find files by description</div></div><div class="badge" style="background:rgba(255,204,0,.1);color:var(--yellow);border:1px solid rgba(255,204,0,.2)">Files</div></div>
+        <div class="si" data-app="music" data-label="Music Player"><div class="si-ico" style="background:rgba(255,79,106,.1)">🎵</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent3)">Music Player</span></div><div class="si-sub">Sticky — plays during freeze</div></div><div class="badge bx">App</div></div>
+        <div class="si" data-action="home"><div class="si-ico" style="background:rgba(0,229,255,.07)">🏠</div><div class="si-txt"><div class="si-title">Return to <span style="color:var(--accent)">Base State</span></div><div class="si-sub">Close app · back to canvas</div></div><div class="badge bf">Nav</div></div>
+      </div>
+    </div>
+    <div class="tb-ctrl">
+      <div class="tray-sm">
+        <div class="ti" style="padding:2px 6px" title="Volume"><svg viewBox="0 0 16 16" fill="none" style="width:12px;height:12px"><path d="M2 5.5h2.5L8 3v10l-3.5-2.5H2V5.5z" fill="rgba(200,214,240,.4)"/><path d="M9.5 5.5a3 3 0 010 5" stroke="rgba(200,214,240,.4)" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--dim)" id="tbVolV">75</span></div>
+        <div class="ti" title="Wi-Fi" style="padding:2px 6px"><div class="wifi-b" style="height:9px"><div class="wb wb1 on"></div><div class="wb wb2 on"></div><div class="wb wb3 on"></div><div class="wb wb4 on"></div></div></div>
+        <div class="ti" title="Battery" style="padding:2px 6px"><div class="batt-b"><div class="batt-f hi" id="tbBf" style="width:78%"></div></div><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--dim)" id="tbBv">78%</span></div>
+        <div class="tdiv"></div>
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);padding:0 6px" id="tbClk">--:--</div>
+      </div>
+      <div class="tb-btn tb-home" id="tbHome" title="Back to Desktop ⌘D">🏠</div>
+      <div class="tdiv"></div>
+      <div class="tb-btn" id="tbHide" title="Hide taskbar">▼</div>
+      <div class="tb-btn" onclick="toggleSettings()" title="Settings">⚙</div>
+    </div>
+  </div>
+  <div id="peek"></div>
+
+  <!-- MODE PANEL -->
+  <div id="modePanel">
+    <div class="mp-title">Dynamic State Shifting</div>
+    <div class="mp-opt sel" id="mNormal" onclick="setMode('normal')"><div class="mp-icon">⚖️</div><div class="mp-info"><div class="mp-name">Normal Mode</div><div class="mp-desc">Balanced power and AI assistance</div></div><div class="mp-check">✓</div></div>
+    <div class="mp-opt" id="mFocused" onclick="setMode('focused')"><div class="mp-icon">🧠</div><div class="mp-info"><div class="mp-name">Focused Mode</div><div class="mp-desc">Deep Freeze ON · minimize distractions</div></div><div class="mp-check"></div></div>
+    <div class="mp-opt" id="mGaming" onclick="setMode('gaming')"><div class="mp-icon">🎮</div><div class="mp-info"><div class="mp-name">Gaming Mode</div><div class="mp-desc">Max hardware output · suspend all extras</div></div><div class="mp-check"></div></div>
+  </div>
+
+  <!-- SECURITY PANEL -->
+  <div id="secPanel">
+    <div class="sec-title">🔒 Iron-Clad Security</div>
+    <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">Offline-First AI</div><div style="font-size:10px;color:var(--dim)">No data leaves device</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
+    <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">Encrypted Object Store</div><div style="font-size:10px;color:var(--dim)">AES-256 at rest</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
+    <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">AI Sandboxing</div><div style="font-size:10px;color:var(--dim)">Strict output schema</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
+    <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">Self-Healing Diagnostics</div><div style="font-size:10px;color:var(--dim)">Idle-time memory scans</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
+    <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">User-Led Updates</div><div style="font-size:10px;color:var(--dim)">No forced restarts</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
+    <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">Peripheral Detection</div><div style="font-size:10px;color:var(--dim)">Object-aware plug-in handling</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
+  </div>
+
+  <!-- SETTINGS PANEL -->
+  <div id="settingsPanel">
+    <div class="mp-title" style="margin-bottom:0">Settings</div>
+    <div class="sp-sec">Adaptive Persona</div>
+    <div class="sp-row"><div class="sp-lbl"><div>AI Learning</div><div class="sp-sub">Learn from usage patterns</div></div><div class="toggle"></div></div>
+    <div class="sp-row"><div class="sp-lbl"><div>Predictive Prefetch</div><div class="sp-sub">Pre-load likely assets on input</div></div><div class="toggle"></div></div>
+    <div class="sp-row"><div class="sp-lbl"><div>Adaptive Power Profile</div><div class="sp-sub">Auto-adjust on battery</div></div><div class="toggle"></div></div>
+    <div class="sp-sec">Interface</div>
+    <div class="sp-row"><div class="sp-lbl"><div>JIT GUI</div><div class="sp-sub">Ephemeral interface elements</div></div><div class="toggle"></div></div>
+    <div class="sp-row"><div class="sp-lbl"><div>Intent Interrupts</div><div class="sp-sub">Non-intrusive notifications</div></div><div class="toggle"></div></div>
+    <div class="sp-row"><div class="sp-lbl"><div>Spatial Canvas Expansion</div><div class="sp-sub">Multi-monitor workspace</div></div><div class="toggle off"></div></div>
+    <div class="sp-sec">System</div>
+    <div class="sp-row"><div class="sp-lbl"><div>User-Led Continuity</div><div class="sp-sub">Manual update control</div></div><div class="toggle"></div></div>
+    <div class="sp-row"><div class="sp-lbl"><div>Self-Healing Diagnostics</div><div class="sp-sub">Idle-time memory scans</div></div><div class="toggle"></div></div>
+    <div class="sp-row"><div class="sp-lbl"><div>State Snapshots</div><div class="sp-sub">Auto-save task state every 5min</div></div><div class="toggle"></div></div>
+    <div class="sp-row"><div class="sp-lbl"><div>Portable Object Export</div><div class="sp-sub">Encrypted backup snapshot</div></div><div class="sp-lbl" style="flex:0"><div class="chip" style="font-size:10px;padding:4px 10px;cursor:none">Export</div></div></div>
+  </div>
+
+  <!-- CLARIFY WIDGET -->
+  <div id="clarify">
+    <div class="cq-title">Did you mean…</div>
+    <div class="cq-sub">Your prompt matched multiple intents</div>
+    <div class="cq-opt" onclick="pickClarify('editor')">💻 Open Code Editor — start a new project</div>
+    <div class="cq-opt" onclick="pickClarify('files')">🗂️ Open Object Store — find existing files</div>
+    <div class="cq-opt" onclick="pickClarify('terminal')">⚙️ Open Terminal — run a system command</div>
+  </div>
+
+  <!-- ONBOARD -->
+  <div id="onboard">
+    <div class="ob-card">
+      <div class="ob-step" id="obStep">Step 1 of 4</div>
+      <div class="ob-title" id="obTitle">Welcome to IntentOS</div>
+      <div class="ob-desc" id="obDesc">There are no folders, no start menu, and no traditional desktop. Just tell the OS what you want to do.</div>
+      <div class="ob-demo" id="obDemo">Try typing: "open my project files"</div>
+      <div class="ob-btn" id="obBtn" onclick="nextOnboard()">Got it →</div>
+      <div class="ob-dots" id="obDots"></div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast">
+    <div class="toast-icon" id="tIco">📥</div>
+    <div class="toast-txt"><div class="toast-title" id="tTitle">Notification</div><div class="toast-sub" id="tSub">Message here</div></div>
+    <div class="toast-close" onclick="hideToast()">✕</div>
+  </div>
+
+  <!-- PREFETCH BAR -->
+  <div id="prefetch"></div>
+
+  <!-- FREEZE BAR -->
+  <div class="fbar" id="fbar"><span style="color:var(--accent)">❄</span><span style="text-transform:uppercase;letter-spacing:.1em" id="fbarTxt">Deep Freeze: Inactive</span><span style="color:var(--green);margin-left:4px">●</span></div>
+
+  <!-- LAUNCH RING -->
+  <div id="lring-wrap"><div class="lring" id="lring"></div></div>
+</div>
+
+<script>
+// ════ STATE ════
+let appMode=false, openApps=[], curApp=null, curMode='normal', battPct=78, vol=75, obStep=0;
+
+// ════ CURSOR ════
+const curEl=document.getElementById('cur'), ca=document.getElementById('ca'), ch=document.getElementById('ch');
+let mx=0,my=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;curEl.style.left=mx+'px';curEl.style.top=my+'px';});
+const HOVER='.chip,.tb-tab,.et,.wg,.si,.pb,.obj-r,.ti,.tb-btn,.tpill,.ad,.as-item,.cq-opt,.mp-opt,.sp-row,.toggle,.ob-btn,.toast-close,.mode-badge,.notif,.tb-home';
+document.addEventListener('mouseover',e=>{
+  const h=!!e.target.closest(HOVER);
+  ca.style.display=h?'none':'block'; ch.style.display=h?'block':'none';
+  curEl.style.filter=h?'drop-shadow(0 0 7px rgba(0,229,255,.9))':'drop-shadow(0 0 5px rgba(0,229,255,.55))';
+});
+
+// ════ CLOCK ════
+function tick(){
+  const n=new Date();
+  const ts=n.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'});
+  const ds=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('clk').textContent=ts;
+  document.getElementById('tDate').textContent=ds;
+  ['tbClk'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=ts;});
+}
+tick();setInterval(tick,1000);
+
+// ════ HW BARS ════
+function rb(b,v,lo,hi){const val=Math.floor(Math.random()*(hi-lo)+lo);document.getElementById(b).style.width=val+'%';document.getElementById(v).textContent=val+'%';}
+setInterval(()=>{rb('cpuB','cpuV',14,68);rb('ramB','ramV',38,80);rb('gpuB','gpuV',4,38);rb('ssdB','ssdV',2,20);},2200);
+
+// ════ BATTERY ════
+let bDir=-1;
+setInterval(()=>{
+  battPct=Math.max(5,Math.min(100,battPct+bDir*(Math.random()*.3)));
+  const p=Math.round(battPct);
+  const c=p>50?'hi':p>20?'md':'lo';
+  ['bfill','tbBf'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.width=p+'%';el.className='batt-f '+c;}});
+  ['battVal','tbBv'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=p+'%';});
+  if(p<=20&&p>19) showToast('🔋','Low Battery','Switch to Adaptive Power Profile?');
+},5000);
+
+// ════ VOLUME ════
+document.getElementById('tVol').addEventListener('click',()=>{
+  vol=vol>0?0:75;
+  ['volVal','tbVolV'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=vol;});
+  ['vW1','vW2'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.opacity=vol>0?'1':'0';});
+  showToast(vol>0?'🔊':'🔇',vol>0?'Volume On':'Muted',vol>0?'Volume restored to '+vol:'All audio muted');
+});
+
+// ════ TOAST ════
+let toastTimer=null;
+function showToast(ico,title,sub){
+  document.getElementById('tIco').textContent=ico;
+  document.getElementById('tTitle').textContent=title;
+  document.getElementById('tSub').textContent=sub;
+  const t=document.getElementById('toast');
+  t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(hideToast,3500);
+}
+function hideToast(){document.getElementById('toast').classList.remove('show');}
+
+// ════ PREFETCH ════
+function doPrefetch(){
+  const pf=document.getElementById('prefetch');
+  pf.className=''; void pf.offsetWidth;
+  pf.classList.add('go');
+  setTimeout(()=>pf.classList.add('done'),600);
+  setTimeout(()=>pf.className='',1000);
+}
+
+// ════ MODE ════
+const MODES={
+  normal:{label:'Normal Mode',cls:'normal',desc:'Balanced power and AI assistance'},
+  focused:{label:'Focused Mode',cls:'focused',desc:'Deep Freeze ON · distractions minimized'},
+  gaming:{label:'Gaming Mode',cls:'gaming',desc:'Max hardware output · all extras suspended'}
+};
+function setMode(m){
+  curMode=m;
+  const md=document.getElementById('modeBadge');
+  md.className='mode-badge '+MODES[m].cls;
+  document.getElementById('modeLabel').textContent=MODES[m].label;
+  ['mNormal','mFocused','mGaming'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.classList.remove('sel','focused-sel','gaming-sel');
+    el.querySelector('.mp-check').textContent='';
+  });
+  const sel=document.getElementById('m'+m.charAt(0).toUpperCase()+m.slice(1));
+  sel.classList.add('sel');
+  if(m==='focused')sel.classList.add('focused-sel');
+  if(m==='gaming')sel.classList.add('gaming-sel');
+  sel.querySelector('.mp-check').textContent='✓';
+  document.getElementById('fbarTxt').textContent=m==='focused'?'Deep Freeze: ACTIVE':m==='gaming'?'Deep Freeze: MAX':'Deep Freeze: Inactive';
+  showToast(m==='focused'?'🧠':m==='gaming'?'🎮':'⚖️',MODES[m].label,MODES[m].desc);
+  closePanels();
+}
+function toggleModePanel(){
+  const p=document.getElementById('modePanel');
+  const s=document.getElementById('secPanel');
+  const sp=document.getElementById('settingsPanel');
+  s.classList.remove('show');sp.classList.remove('show');
+  p.classList.toggle('show');
+}
+
+// ════ SECURITY ════
+function toggleSec(){
+  const p=document.getElementById('secPanel');
+  const mp=document.getElementById('modePanel');
+  const sp=document.getElementById('settingsPanel');
+  mp.classList.remove('show');sp.classList.remove('show');
+  p.classList.toggle('show');
+}
+
+// ════ SETTINGS ════
+function toggleSettings(){
+  const p=document.getElementById('settingsPanel');
+  const mp=document.getElementById('modePanel');
+  const s=document.getElementById('secPanel');
+  mp.classList.remove('show');s.classList.remove('show');
+  p.classList.toggle('show');
+}
+function closePanels(){
+  ['modePanel','secPanel','settingsPanel'].forEach(id=>document.getElementById(id).classList.remove('show'));
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#modePanel,#secPanel,#settingsPanel,.mode-badge,.tb-btn,.et'))closePanels();
+});
+
+// ════ APP CONTENT ════
+const APPS={
+  editor:{emoji:'💻',title:'Code Editor — intentos_kernel.js',
+    html:`<div class="a-side"><div class="as-sec">Explorer</div><div class="as-item on">📄 intentos_kernel.js</div><div class="as-item">📄 memory_manager.js</div><div class="as-item">📄 storage_ctrl.js</div><div class="as-item">📁 /modules</div><div class="as-item" style="padding-left:20px">📄 ai_kernel.js</div><div class="as-item" style="padding-left:20px">📄 spotter.js</div><br><div class="as-sec">Outline</div><div class="as-item">fn initKernel()</div><div class="as-item">fn deepFreeze()</div><div class="as-item">fn resolveIntent()</div></div><div class="a-main"><div class="cl"><span class="ln">1</span><span class="cc">// IntentOS Kernel v1.0 — Lean-Core Architecture</span></div><div class="cl"><span class="ln">2</span><span class="cc">// Deep Freeze · Predictive Prefetch · Relational Object Store</span></div><div class="cl"><span class="ln">3</span></div><div class="cl"><span class="ln">4</span><span class="ck">import</span> { <span class="cv">MemoryManager</span>, <span class="cv">AIKernel</span>, <span class="cv">ObjectStore</span> } <span class="ck">from</span> <span class="cs">'./modules'</span>;</div><div class="cl"><span class="ln">5</span><span class="ck">const</span> <span class="cv">STICKY</span> = [<span class="cs">'voice_comm'</span>, <span class="cs">'music_player'</span>];</div><div class="cl"><span class="ln">6</span></div><div class="cl"><span class="ln">7</span><span class="ck">async function</span> <span class="cf">deepFreeze</span>(<span class="cv">task</span>) {</div><div class="cl"><span class="ln">8</span>  <span class="ck">const</span> <span class="cv">procs</span> = <span class="ck">await</span> <span class="cf">getRunning</span>();</div><div class="cl"><span class="ln">9</span>  <span class="cv">procs</span>.<span class="cf">filter</span>(<span class="cv">p</span> => <span class="cv">p</span>.id !== <span class="cv">task</span> && !<span class="cv">STICKY</span>.<span class="cf">includes</span>(<span class="cv">p</span>.id))</div><div class="cl"><span class="ln">10</span>      .<span class="cf">forEach</span>(<span class="cv">p</span> => <span class="cv">MemoryManager</span>.<span class="cf">suspend</span>(<span class="cv">p</span>));</div><div class="cl"><span class="ln">11</span>  <span class="ck">return</span> <span class="cv">MemoryManager</span>.<span class="cf">lockTo</span>(<span class="cv">task</span>);</div><div class="cl"><span class="ln">12</span>}</div><div class="cl"><span class="ln">13</span></div><div class="cl"><span class="ln">14</span><span class="ck">export async function</span> <span class="cf">resolveIntent</span>(<span class="cv">prompt</span>) {</div><div class="cl"><span class="ln">15</span>  <span class="ck">const</span> <span class="cv">intent</span> = <span class="ck">await</span> <span class="cv">AIKernel</span>.<span class="cf">parse</span>(<span class="cv">prompt</span>);</div><div class="cl"><span class="ln">16</span>  <span class="cf">prefetchAssets</span>(<span class="cv">intent</span>.<span class="cv">app</span>);</div><div class="cl"><span class="ln">17</span>  <span class="ck">if</span>(<span class="cv">intent</span>.<span class="cv">confidence</span> < <span class="cn">0.7</span>) <span class="ck">return</span> <span class="cf">showClarify</span>(<span class="cv">intent</span>);</div><div class="cl"><span class="ln">18</span>  <span class="ck">return</span> <span class="cf">execute</span>(<span class="cv">intent</span>);</div><div class="cl"><span class="ln">19</span>}</div></div>`},
+  browser:{emoji:'🌐',title:'Browser — intentos.local',
+    html:`<div style="display:flex;flex-direction:column;width:100%;height:100%"><div class="br-bar"><div class="br-btn">←</div><div class="br-btn">→</div><div class="br-url"><span style="color:var(--accent);margin-right:8px">🔒</span>intentos.local/docs/kernel-overview</div><div class="br-btn">↻</div></div><div class="br-body"><div style="font-size:48px">🌐</div><div style="font-size:20px;font-weight:700">IntentOS Documentation</div><div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--dim)">intentos.local — Local Offline · Iron-Clad Enabled</div><div style="display:flex;gap:8px;margin-top:14px"><div class="chip">Kernel API</div><div class="chip">Memory Mgmt</div><div class="chip">Object Store</div><div class="chip">Security</div></div></div></div>`},
+  terminal:{emoji:'⚙️',title:'Terminal — root@intentos',
+    html:`<div class="term-body"><div style="color:var(--green);margin-bottom:3px">IntentOS Terminal v1.0 — Lean-Core Shell</div><div style="color:rgba(200,214,240,.28);margin-bottom:16px">Iron-Clad enabled · Offline-first · Type 'help' for commands</div><div style="color:rgba(200,214,240,.45);margin-bottom:5px"><span style="color:var(--green)">root@intentos</span><span style="color:var(--dim)">:~$</span> intent list-processes --verbose</div><div style="color:var(--dim);line-height:2;margin-bottom:16px"><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 001</span> kernel_core&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 120MB&nbsp; CPU: 2%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 002</span> ai_slm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 4.8GB&nbsp; CPU: 8%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 003</span> object_store&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 48MB&nbsp;&nbsp; CPU: 1%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 009</span> voice_comm&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--yellow)">★ STICKY&nbsp;</span>&nbsp; RAM: 22MB&nbsp;&nbsp; CPU: 0%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 014</span> self_heal&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--yellow)">★ IDLE&nbsp;&nbsp;&nbsp;</span>&nbsp; RAM: 4MB&nbsp;&nbsp;&nbsp; CPU: 0%</div></div><div style="color:rgba(200,214,240,.45);margin-bottom:5px"><span style="color:var(--green)">root@intentos</span><span style="color:var(--dim)">:~$</span> intent freeze --mode=focused</div><div style="color:var(--dim);margin-bottom:16px;line-height:1.9"><div style="color:var(--green)">✓ Deep Freeze activated — Focused Mode</div><div>&nbsp; Suspended 3 non-sticky processes</div><div>&nbsp; Locked 14.2 GB RAM → active task</div><div>&nbsp; CPU priority escalated: MAX</div><div>&nbsp; Self-Heal queued for idle window</div></div><div style="display:flex;align-items:center;gap:5px"><span style="color:var(--green)">root@intentos</span><span style="color:var(--dim)">:~$</span><span style="display:inline-block;width:8px;height:14px;background:var(--accent);animation:blink 1s step-end infinite"></span></div></div>`},
+  music:{emoji:'🎵',title:'Music Player — Local Library',
+    html:`<div style="display:flex;flex-direction:column;width:100%;height:100%;align-items:center;justify-content:center;gap:20px;padding:30px"><div style="font-size:60px;animation:spin 8s linear infinite">💿</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style><div style="text-align:center"><div style="font-size:20px;font-weight:700">Synthwave · Focus Mix</div><div style="font-size:12px;color:var(--dim);font-family:'Space Mono',monospace;margin-top:4px">Local Library · 47 tracks · Iron-Clad: no streaming</div></div><div style="width:360px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden"><div style="width:38%;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;box-shadow:0 0 10px rgba(0,229,255,.4)"></div></div><div style="display:flex;gap:12px;align-items:center"><div class="chip">⏮</div><div class="chip" style="color:var(--accent);border-color:rgba(0,229,255,.3)">⏸</div><div class="chip">⏭</div></div><div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);padding:8px 14px;background:rgba(255,204,0,.06);border:1px solid rgba(255,204,0,.15);border-radius:7px">★ Sticky Process — active during Deep Freeze</div></div>`},
+  files:{emoji:'🗂️',title:'Object Store — Semantic Search',
+    html:`<div style="display:flex;flex-direction:column;width:100%;height:100%;padding:24px;gap:16px"><div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,204,0,.25);border-radius:10px"><span style="font-size:16px">🔍</span><input style="flex:1;background:none;border:none;outline:none;font-family:'Syne',sans-serif;font-size:14px;color:var(--text);cursor:none" placeholder="Describe what you're looking for…" value="show me my database project files"/><span style="font-family:'Space Mono',monospace;font-size:10px;color:var(--yellow)">12 objects found</span></div><div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase">Semantic Results — no folder path needed</div><div style="display:flex;flex-direction:column;gap:6px;overflow-y:auto"><div class="obj-r" style="background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.12);border-radius:9px;padding:10px 14px"><span style="font-size:18px">📊</span><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">db_management_schema.sql</div><div style="font-size:10px;color:var(--dim);font-family:'Space Mono',monospace">Tags: database · schema · SQL · project-alpha · 2h ago</div></div><div class="chip" style="font-size:10px;padding:3px 10px">Open</div></div><div class="obj-r" style="background:rgba(123,111,240,.04);border:1px solid rgba(123,111,240,.12);border-radius:9px;padding:10px 14px"><span style="font-size:18px">📝</span><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">db_design_notes.md</div><div style="font-size:10px;color:var(--dim);font-family:'Space Mono',monospace">Tags: notes · database · design · markdown · 1d ago</div></div><div class="chip" style="font-size:10px;padding:3px 10px">Open</div></div><div class="obj-r" style="background:rgba(255,204,0,.03);border:1px solid rgba(255,204,0,.1);border-radius:9px;padding:10px 14px"><span style="font-size:18px">🐍</span><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">db_query_tests.py</div><div style="font-size:10px;color:var(--dim);font-family:'Space Mono',monospace">Tags: python · testing · database · queries · 3d ago</div></div><div class="chip" style="font-size:10px;padding:3px 10px">Open</div></div><div class="obj-r" style="background:rgba(255,79,106,.03);border:1px solid rgba(255,79,106,.1);border-radius:9px;padding:10px 14px"><span style="font-size:18px">📋</span><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--text)">project_alpha_requirements.pdf</div><div style="font-size:10px;color:var(--dim);font-family:'Space Mono',monospace">Tags: requirements · project-alpha · PDF · planning · 1w ago</div></div><div class="chip" style="font-size:10px;padding:3px 10px">Open</div></div></div></div>`}
+};
+
+// ════ BOOT ════
+const BLINES=[
+  {t:'init',m:'Loading Lean-Core bootloader…'},
+  {t:'ok',m:'Secure boot signature verified'},
+  {t:'init',m:'Mounting Relational Object Store…'},
+  {t:'ok',m:'Object Store ready — 128,440 objects indexed'},
+  {t:'load',m:'Initializing local AI kernel (SLM 5.1GB)…'},
+  {t:'ok',m:'AI kernel active — intent parsing ready'},
+  {t:'load',m:'Starting predictive prefetch engine…'},
+  {t:'ok',m:'Prefetch engine online'},
+  {t:'init',m:'Activating Iron-Clad security layer…'},
+  {t:'ok',m:'Iron-Clad active — offline-first mode confirmed'},
+  {t:'load',m:'Running Self-Healing diagnostics…'},
+  {t:'ok',m:'System clean — no issues found'},
+  {t:'init',m:'Rendering JIT GUI layer…'},
+  {t:'ready',m:'IntentOS ready — welcome back.'},
+];
+const BSTAGES=['Secure Boot','Lean-Core Init','Object Store','AI Kernel','Prefetch','Iron-Clad','Self-Heal','GUI Layer','Ready'];
+let bli=0;
+const bLog=document.getElementById('bLog'),bFill=document.getElementById('bFill'),bStage=document.getElementById('bStage'),bPct=document.getElementById('bPct');
+
+function nextBoot(){
+  if(bli>=BLINES.length){setTimeout(goDesktop,500);return;}
+  const b=BLINES[bli];
+  const el=document.createElement('div');el.className='b-line';
+  el.innerHTML=`<span class="b-tag ${b.t}">${b.t.toUpperCase()}</span><span class="b-msg">${b.m}</span>`;
+  bLog.appendChild(el);bli++;
+  const p=Math.round(bli/BLINES.length*100);
+  bFill.style.width=p+'%';bPct.textContent=p+'%';
+  bStage.textContent=(BSTAGES[Math.min(Math.floor(bli/BLINES.length*BSTAGES.length),BSTAGES.length-1)]||'')+'…';
+  setTimeout(nextBoot,bli<8?300:bli<12?240:500);
+}
+setTimeout(nextBoot,1200);
+
+function goDesktop(){
+  document.getElementById('boot').classList.add('out');
+  setTimeout(()=>{
+    document.getElementById('boot').style.display='none';
+    document.getElementById('desk').classList.add('on');
+    setTimeout(()=>{
+      showOnboard();
+    },400);
+  },1000);
+}
+
+// ════ ONBOARD ════
+const OSTEPS=[
+  {step:'Step 1 of 4',title:'Welcome to IntentOS',desc:'There are no folders, no start menu, no traditional desktop. Just tell the OS what you want to do.',demo:'Try typing: "open my code editor"'},
+  {step:'Step 2 of 4',title:'The Intent Bar',desc:'This is your entire interface. Type anything naturally — the AI kernel understands you. It will ask if something is unclear.',demo:'Example: "find my database project files"'},
+  {step:'Step 3 of 4',title:'Dynamic State Shifting',desc:'Switch between Normal, Focused, and Gaming Mode. Focused Mode activates Deep Freeze — 100% of RAM goes to your task.',demo:'Click the mode badge in the top bar to switch modes'},
+  {step:'Step 4 of 4',title:'Iron-Clad & Privacy',desc:'Your AI runs completely offline. Nothing leaves your device. Click the 🔒 button to see all active security features.',demo:'All personal data stays on your machine — always'},
+];
+let obI=0;
+function showOnboard(){
+  document.getElementById('onboard').classList.add('show');
+  renderOnboard();
+}
+function renderOnboard(){
+  const s=OSTEPS[obI];
+  document.getElementById('obStep').textContent=s.step;
+  document.getElementById('obTitle').textContent=s.title;
+  document.getElementById('obDesc').textContent=s.desc;
+  document.getElementById('obDemo').textContent=s.demo;
+  document.getElementById('obBtn').textContent=obI<OSTEPS.length-1?'Got it →':'Start Using IntentOS';
+  const dots=document.getElementById('obDots');dots.innerHTML='';
+  OSTEPS.forEach((_,i)=>{const d=document.createElement('div');d.className='ob-dot'+(i===obI?' on':'');dots.appendChild(d);});
+}
+function nextOnboard(){
+  obI++;
+  if(obI>=OSTEPS.length){document.getElementById('onboard').classList.remove('show');setTimeout(()=>document.getElementById('cIn').focus(),400);return;}
+  renderOnboard();
+}
+
+// ════ CENTER SPOTTER ════
+const cIn=document.getElementById('cIn'),cDrop=document.getElementById('cDrop');
+cIn.addEventListener('input',()=>{
+  cDrop.style.display=cIn.value.length>0?'block':'none';
+  if(cIn.value.length>1)doPrefetch();
+});
+cIn.addEventListener('focus',()=>document.getElementById('cSp').classList.add('on'));
+cIn.addEventListener('blur',()=>{document.getElementById('cSp').classList.remove('on');setTimeout(()=>cDrop.style.display='none',150);});
+cDrop.querySelectorAll('[data-app]').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();launchApp(el.dataset.app,el.dataset.label);}));
+cDrop.querySelectorAll('[data-action="clarify"]').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();showClarify();}));
+
+// ════ CLARIFY ════
+function showClarify(){document.getElementById('clarify').classList.add('show');}
+function pickClarify(app){
+  document.getElementById('clarify').classList.remove('show');
+  const labels={editor:'Code Editor',files:'Object Store',terminal:'Terminal'};
+  launchApp(app,labels[app]);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('clarify').classList.remove('show');closePanels();}});
+
+// ════ LAUNCH ════
+function launchApp(id,label){
+  if(!APPS[id])return;
+  doPrefetch();
+  const r=document.getElementById('lring');
+  r.classList.remove('go');void r.offsetWidth;r.classList.add('go');
+  setTimeout(()=>{
+    const app=APPS[id];
+    document.getElementById('base').classList.add('off');
+    document.getElementById('appV').classList.add('on');
+    document.getElementById('appNm').innerHTML=`<span style="color:var(--accent2)">${app.emoji} ${app.title.split('—')[0].trim()}</span> <span style="font-weight:400;color:var(--dim)">— ${app.title.split('—')[1]?.trim()||''}</span>`;
+    document.getElementById('appBd').innerHTML=app.html;
+    appMode=true;
+    if(!openApps.find(a=>a.id===id))openApps.push({id,label,emoji:app.emoji});
+    curApp=id;renderPills();showTbar();
+    document.getElementById('fbar').classList.add('off');
+    cIn.value='';cDrop.style.display='none';
+    showToast('🚀','App Launched',`${label} ready — prefetch complete`);
+  },200);
+}
+
+// ════ TASKBAR ════
+function showTbar(){document.getElementById('tbar').classList.add('up');document.getElementById('peek').classList.add('off');}
+function hideTbar(){document.getElementById('tbar').classList.remove('up');document.getElementById('peek').classList.remove('off');}
+document.getElementById('tbHide').addEventListener('click',hideTbar);
+document.getElementById('peek').addEventListener('click',showTbar);
+
+function renderPills(){
+  const c=document.getElementById('tbPills');c.innerHTML='';
+  openApps.forEach(a=>{
+    const p=document.createElement('div');
+    p.className='tpill run'+(a.id===curApp?' cur':'');
+    p.textContent=`${a.emoji} ${a.label}`;
+    p.addEventListener('click',()=>switchApp(a.id,a.label));
+    c.appendChild(p);
+  });
+}
+function switchApp(id,label){
+  const app=APPS[id];if(!app)return;
+  document.getElementById('appNm').innerHTML=`<span style="color:var(--accent2)">${app.emoji} ${app.title.split('—')[0].trim()}</span> <span style="font-weight:400;color:var(--dim)">— ${app.title.split('—')[1]?.trim()||''}</span>`;
+  document.getElementById('appBd').innerHTML=app.html;
+  curApp=id;renderPills();
+}
+
+// ════ TB SPOTTER ════
+const tbIn=document.getElementById('tbIn'),tbDrop=document.getElementById('tbDrop');
+tbIn.addEventListener('input',()=>{
+  const v=tbIn.value.trim().toLowerCase();
+  if(v==='home'||v==='desktop'||v==='base'){goHome();tbIn.value='';return;}
+  tbDrop.style.display=tbIn.value.length>0?'block':'none';
+  if(tbIn.value.length>1)doPrefetch();
+});
+tbIn.addEventListener('blur',()=>setTimeout(()=>tbDrop.style.display='none',160));
+tbDrop.querySelectorAll('[data-app]').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();tbIn.value='';tbDrop.style.display='none';launchApp(el.dataset.app,el.dataset.label);}));
+tbDrop.querySelectorAll('[data-action="home"]').forEach(el=>el.addEventListener('mousedown',e=>{e.preventDefault();goHome();}));
+
+// ════ HOME / CLOSE ════
+document.getElementById('btnClose').addEventListener('click',goHome);
+document.getElementById('tbHome').addEventListener('click',goHome);
+function goHome(){
+  document.getElementById('appV').classList.remove('on');
+  document.getElementById('base').classList.remove('off');
+  appMode=false;curApp=null;openApps=[];
+  hideTbar();document.getElementById('fbar').classList.remove('off');
+  tbIn.value='';tbDrop.style.display='none';
+}
+
+// ════ KEYBOARD ════
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.code==='Space'){e.preventDefault();cIn.focus();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();if(appMode)tbIn.focus();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='d'){e.preventDefault();if(appMode)goHome();}
+  if(e.key==='Escape'){cIn.blur();tbIn.blur();document.getElementById('clarify').classList.remove('show');closePanels();}
+});
+
+// ════ SELF-HEAL SIMULATION ════
+setInterval(()=>{
+  const msgs=['Memory leak detected and patched','Fragmented cache cleared','Idle prefetch index rebuilt','3 zombie processes terminated'];
+  showToast('🛡️','Self-Heal Complete',msgs[Math.floor(Math.random()*msgs.length)]);
+},45000);
+
+// ════ PERIPHERAL SIMULATION ════
+setTimeout(()=>{
+  showToast('🖨️','Device Connected','USB detected — action chips: Print · Transfer · Backup');
+},12000);
+</script>
+</body>
+</html>
