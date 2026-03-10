@@ -670,7 +670,7 @@ function initPresentation() {
   hideTbar();
   
   if (!pdfDoc) {
-    pdfjsLib.getDocument('ppt.pdf').promise.then(pdf => {
+    pdfjsLib.getDocument('/ppt.pdf').promise.then(pdf => {
       pdfDoc = pdf;
       renderPage(pageNum);
     }).catch(err => {
