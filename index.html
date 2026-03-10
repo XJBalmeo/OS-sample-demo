@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IntentOS v1.0 — Full Prototype</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <style>
 :root {
   --bg:#060810; --surface:rgba(255,255,255,.03); --border:rgba(255,255,255,.07);
@@ -332,13 +333,11 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
 </head>
 <body>
 
-<!-- CURSOR -->
 <div id="cur">
   <svg id="ca" viewBox="0 0 22 26" fill="none"><path d="M2 2L2 20L6.5 15.5L9.5 22L12 21L9 14.5L15.5 14.5L2 2Z" fill="#e8f4ff" stroke="#00e5ff" stroke-width="1.2" stroke-linejoin="round"/></svg>
   <svg id="ch" viewBox="0 0 20 24" fill="none" style="display:none"><path d="M7 10V4a1.5 1.5 0 013 0v6M7 10V8a1.5 1.5 0 00-3 0v5c0 3.314 2.686 6 6 6h1a5 5 0 005-5v-4a1.5 1.5 0 00-3 0M7 10a1.5 1.5 0 013 0M10 10v-1a1.5 1.5 0 013 0v1" stroke="#e8f4ff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
 </div>
 
-<!-- BOOT -->
 <div id="boot">
   <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
     <div class="b-hex">
@@ -356,13 +355,11 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
   <div class="b-ver">BUILD 2025.03.07 · LEAN-CORE ARCH · IRON-CLAD ENABLED · SECURE BOOT ✓</div>
 </div>
 
-<!-- DESKTOP -->
 <div id="desk">
   <div class="bg-grid"></div>
   <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
   <div class="scanlines"></div>
 
-  <!-- TOPBAR -->
   <div class="topbar">
     <div class="logo"><div class="logo-dot"></div>Intent<span style="color:var(--dim);font-weight:400">OS</span></div>
     <div class="tb-tabs">
@@ -372,13 +369,11 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
       <div class="tb-tab">+</div>
     </div>
     <div class="tb-right">
-      <!-- Mode badge -->
       <div class="mode-badge normal" id="modeBadge" onclick="toggleModePanel()">
         <div class="mode-dot"></div>
         <span id="modeLabel">Normal Mode</span>
       </div>
       <div class="t-sep"></div>
-      <!-- System tray -->
       <div class="tray">
         <div class="ti" id="tVol" title="Volume — click to mute">
           <svg viewBox="0 0 16 16" fill="none"><path id="vIco" d="M2 5.5h2.5L8 3v10l-3.5-2.5H2V5.5z" fill="rgba(200,214,240,.55)"/><path id="vW1" d="M9.5 5.5a3 3 0 010 5" stroke="rgba(200,214,240,.55)" stroke-width="1.2" stroke-linecap="round" fill="none"/><path id="vW2" d="M11 3.5a5.5 5.5 0 010 9" stroke="rgba(200,214,240,.35)" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
@@ -400,7 +395,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     </div>
   </div>
 
-  <!-- EDGE TABS -->
   <div class="edge">
     <div class="et on" title="Base State">🏠</div>
     <div class="et" title="Dev Workspace">💻</div>
@@ -409,7 +403,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     <div class="et" title="Security" onclick="toggleSec()">🔒</div>
   </div>
 
-  <!-- BASE CANVAS -->
   <div id="base">
     <div class="intent-lbl">Declare your intent</div>
 
@@ -420,7 +413,17 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
         <div class="sp-hint"><span class="key">⌘</span><span class="key">Space</span></div>
       </div>
       <div class="drop" id="cDrop" style="display:none">
-        <div class="si hi" data-app="editor" data-label="Code Editor"><div class="si-ico" style="background:rgba(0,229,255,.1)">💻</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent)">Code Editor</span></div><div class="si-sub">IDE · syntax highlighting · explorer</div></div><div class="badge bf">App</div></div>
+        
+        <div class="si hi" onmousedown="event.preventDefault(); initPresentation()">
+          <div class="si-ico" style="background:rgba(0,229,255,.15)">📊</div>
+          <div class="si-txt">
+            <div class="si-title">Start <span style="color:var(--accent)">Presentation</span></div>
+            <div class="si-sub">Fullscreen · Arrow Key Nav</div>
+          </div>
+          <div class="badge bf">Pitch</div>
+        </div>
+
+        <div class="si" data-app="editor" data-label="Code Editor"><div class="si-ico" style="background:rgba(0,229,255,.1)">💻</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent)">Code Editor</span></div><div class="si-sub">IDE · syntax highlighting · explorer</div></div><div class="badge bf">App</div></div>
         <div class="si" data-app="browser" data-label="Browser"><div class="si-ico" style="background:rgba(123,111,240,.15)">🌐</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent2)">Browser</span></div><div class="si-sub">Local + web navigation</div></div><div class="badge ba">App</div></div>
         <div class="si" data-app="terminal" data-label="Terminal"><div class="si-ico" style="background:rgba(0,255,136,.07)">⚙️</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--green)">Terminal</span></div><div class="si-sub">System shell · intent commands</div></div><div class="badge bg2">System</div></div>
         <div class="si" data-app="music" data-label="Music Player"><div class="si-ico" style="background:rgba(255,79,106,.1)">🎵</div><div class="si-txt"><div class="si-title">Open <span style="color:var(--accent3)">Music Player</span></div><div class="si-sub">Local audio · sticky mode</div></div><div class="badge bx">App</div></div>
@@ -441,7 +444,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     </div>
 
     <div class="wgrid">
-      <!-- System Load -->
       <div class="wg">
         <div class="wh"><div class="wt">System Load</div><div class="wd wd-c"></div></div>
         <div class="hw-bars">
@@ -451,24 +453,22 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
           <div class="hw-row"><div class="hw-lbl">SSD</div><div class="hw-tr"><div class="hw-fi fc" id="ssdB" style="width:7%"></div></div><div class="hw-vl" id="ssdV">7%</div></div>
         </div>
       </div>
-      <!-- Recent Objects -->
       <div class="wg">
         <div class="wh"><div class="wt">Recent Objects</div><div class="wd wd-p"></div></div>
         <div class="obj-list">
-          <div class="obj-r"><span>📊</span><div class="obj-n">db_schema.sql</div><div class="obj-t">2h</div></div>
-          <div class="obj-r"><span>📝</span><div class="obj-n">intentos_proposal.md</div><div class="obj-t">5h</div></div>
-          <div class="obj-r"><span>🖼️</span><div class="obj-n">ui_wireframe.png</div><div class="obj-t">1d</div></div>
-          <div class="obj-r"><span>📦</span><div class="obj-n">kernel_v0.3.2.tar</div><div class="obj-t">2d</div></div>
+          <div class="obj-r"><span>🐍</span><div class="obj-n">LinearAlgebra_BasisFinder.py</div><div class="obj-t">1h</div></div>
+          <div class="obj-r"><span>☕</span><div class="obj-n">TicketBooker_OOP.java</div><div class="obj-t">5h</div></div>
+          <div class="obj-r"><span>📋</span><div class="obj-n">LogicDesign_Circuit_ExecSummary.pdf</div><div class="obj-t">1d</div></div>
+          <div class="obj-r"><span>🌐</span><div class="obj-n">Web_Portfolio_v2.html</div><div class="obj-t">2d</div></div>
         </div>
       </div>
-      <!-- Pinned Intents -->
       <div class="wg">
         <div class="wh"><div class="wt">Pinned Intents</div><div class="wd wd-r"></div></div>
         <div class="pin-grid">
           <div class="pb" onclick="launchApp('terminal','Terminal')"><span>🧹</span> Clean</div>
           <div class="pb" onclick="showToast('💾','Backup Started','Object Store snapshot created')"><span>💾</span> Backup</div>
           <div class="pb" onclick="setMode('gaming')"><span>🎮</span> Game Mode</div>
-          <div class="pb" onclick="showToast('🚀','Deploy Triggered','Build pipeline initiated')"><span>🚀</span> Deploy</div>
+          <div class="pb" onclick="initPresentation()"><span>📊</span> Pitch Deck</div>
         </div>
         <div style="margin-top:10px;background:rgba(255,79,106,.06);border:1px solid rgba(255,79,106,.18);border-radius:9px;padding:10px 12px;">
           <div style="font-size:10px;color:var(--dim);margin-bottom:7px;">Did you mean…</div>
@@ -476,7 +476,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
           <div class="cq-opt" style="font-size:11px;padding:7px 10px;" onclick="launchApp('files','Object Store')">🗂️ Open Object Store</div>
         </div>
       </div>
-      <!-- Notifications -->
       <div class="wg">
         <div class="wh"><div class="wt">Intent Interrupts</div><div class="wd wd-g"></div></div>
         <div class="notif-list">
@@ -488,7 +487,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     </div>
   </div>
 
-  <!-- APP VIEW -->
   <div id="appV">
     <div class="app-win">
       <div class="app-tb">
@@ -504,7 +502,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     </div>
   </div>
 
-  <!-- TASKBAR -->
   <div id="tbar">
     <div class="tb-pills" id="tbPills"></div>
     <div class="tdiv"></div>
@@ -538,7 +535,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
   </div>
   <div id="peek"></div>
 
-  <!-- MODE PANEL -->
   <div id="modePanel">
     <div class="mp-title">Dynamic State Shifting</div>
     <div class="mp-opt sel" id="mNormal" onclick="setMode('normal')"><div class="mp-icon">⚖️</div><div class="mp-info"><div class="mp-name">Normal Mode</div><div class="mp-desc">Balanced power and AI assistance</div></div><div class="mp-check">✓</div></div>
@@ -546,7 +542,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     <div class="mp-opt" id="mGaming" onclick="setMode('gaming')"><div class="mp-icon">🎮</div><div class="mp-info"><div class="mp-name">Gaming Mode</div><div class="mp-desc">Max hardware output · suspend all extras</div></div><div class="mp-check"></div></div>
   </div>
 
-  <!-- SECURITY PANEL -->
   <div id="secPanel">
     <div class="sec-title">🔒 Iron-Clad Security</div>
     <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">Offline-First AI</div><div style="font-size:10px;color:var(--dim)">No data leaves device</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
@@ -557,7 +552,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     <div class="sec-row"><div class="sec-label"><div style="font-size:11px;color:var(--text)">Peripheral Detection</div><div style="font-size:10px;color:var(--dim)">Object-aware plug-in handling</div></div><div class="sec-status sec-on">● ACTIVE</div><div class="toggle"></div></div>
   </div>
 
-  <!-- SETTINGS PANEL -->
   <div id="settingsPanel">
     <div class="mp-title" style="margin-bottom:0">Settings</div>
     <div class="sp-sec">Adaptive Persona</div>
@@ -575,7 +569,6 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     <div class="sp-row"><div class="sp-lbl"><div>Portable Object Export</div><div class="sp-sub">Encrypted backup snapshot</div></div><div class="sp-lbl" style="flex:0"><div class="chip" style="font-size:10px;padding:4px 10px;cursor:none">Export</div></div></div>
   </div>
 
-  <!-- CLARIFY WIDGET -->
   <div id="clarify">
     <div class="cq-title">Did you mean…</div>
     <div class="cq-sub">Your prompt matched multiple intents</div>
@@ -584,38 +577,111 @@ body{background:#000;color:var(--text);font-family:'Syne',sans-serif;height:100v
     <div class="cq-opt" onclick="pickClarify('terminal')">⚙️ Open Terminal — run a system command</div>
   </div>
 
-  <!-- ONBOARD -->
   <div id="onboard">
     <div class="ob-card">
       <div class="ob-step" id="obStep">Step 1 of 4</div>
       <div class="ob-title" id="obTitle">Welcome to IntentOS</div>
-      <div class="ob-desc" id="obDesc">There are no folders, no start menu, and no traditional desktop. Just tell the OS what you want to do.</div>
-      <div class="ob-demo" id="obDemo">Try typing: "open my project files"</div>
+      <div class="ob-desc" id="obDesc">wala kang gagawin AI na lahat gagawa para sayo kinginamo</div>
+      <div class="ob-demo" id="obDemo"></div>
       <div class="ob-btn" id="obBtn" onclick="nextOnboard()">Got it →</div>
       <div class="ob-dots" id="obDots"></div>
     </div>
   </div>
 
-  <!-- TOAST -->
   <div class="toast" id="toast">
     <div class="toast-icon" id="tIco">📥</div>
     <div class="toast-txt"><div class="toast-title" id="tTitle">Notification</div><div class="toast-sub" id="tSub">Message here</div></div>
     <div class="toast-close" onclick="hideToast()">✕</div>
   </div>
 
-  <!-- PREFETCH BAR -->
   <div id="prefetch"></div>
 
-  <!-- FREEZE BAR -->
   <div class="fbar" id="fbar"><span style="color:var(--accent)">❄</span><span style="text-transform:uppercase;letter-spacing:.1em" id="fbarTxt">Deep Freeze: Inactive</span><span style="color:var(--green);margin-left:4px">●</span></div>
 
-  <!-- LAUNCH RING -->
   <div id="lring-wrap"><div class="lring" id="lring"></div></div>
+
+  <div id="presentation-mode" style="position:fixed; inset:0; background:#000; z-index:99999; display:none; align-items:center; justify-content:center; flex-direction:column;">
+    <canvas id="pdf-canvas-1" style="position:absolute; max-width:100vw; max-height:100vh; object-fit:contain; transition: opacity 0.15s ease-in-out; opacity:1; box-shadow: 0 0 50px rgba(0,229,255,0.1);"></canvas>
+    <canvas id="pdf-canvas-2" style="position:absolute; max-width:100vw; max-height:100vh; object-fit:contain; transition: opacity 0.15s ease-in-out; opacity:0; box-shadow: 0 0 50px rgba(0,229,255,0.1);"></canvas>
+    <div style="position:absolute; bottom:20px; font-family:'Space Mono', monospace; font-size:10px; color:rgba(255,255,255,0.2); z-index: 10;">
+    </div>
+  </div>
+
 </div>
 
 <script>
 // ════ STATE ════
 let appMode=false, openApps=[], curApp=null, curMode='normal', battPct=78, vol=75, obStep=0;
+
+// ════ FULLSCREEN PDF ENGINE (DOUBLE BUFFERED) ════
+let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null;
+let activeCanvas = 1;
+
+// The pdf.js library requires setting the workerSrc to function optimally
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+function renderPage(num) {
+  pageRendering = true;
+  pdfDoc.getPage(num).then(page => {
+    const viewport = page.getViewport({scale: 2.0}); // High res rendering
+    
+    // Determine which canvas is currently hidden
+    const nextCanvasId = activeCanvas === 1 ? 'pdf-canvas-2' : 'pdf-canvas-1';
+    const currentCanvasId = activeCanvas === 1 ? 'pdf-canvas-1' : 'pdf-canvas-2';
+    
+    const nextCanvas = document.getElementById(nextCanvasId);
+    const currentCanvas = document.getElementById(currentCanvasId);
+    const ctx = nextCanvas.getContext('2d');
+
+    // Size the hidden canvas
+    nextCanvas.height = viewport.height;
+    nextCanvas.width = viewport.width;
+
+    // Render the new page onto the hidden canvas
+    page.render({canvasContext: ctx, viewport: viewport}).promise.then(() => {
+      pageRendering = false;
+      
+      // Swap Opacities for a smooth crossfade
+      nextCanvas.style.opacity = 1;
+      currentCanvas.style.opacity = 0;
+      activeCanvas = activeCanvas === 1 ? 2 : 1;
+
+      if (pageNumPending !== null) { 
+        renderPage(pageNumPending); 
+        pageNumPending = null; 
+      }
+    });
+  });
+}
+
+function queueRenderPage(num) {
+  if (pageRendering) pageNumPending = num;
+  else renderPage(num);
+}
+
+function initPresentation() {
+  const pMode = document.getElementById('presentation-mode');
+  pMode.style.display = 'flex';
+  
+  // Hide desktop completely
+  document.getElementById('base').style.display = 'none';
+  document.getElementById('cDrop').style.display = 'none';
+  document.getElementById('cIn').blur();
+  hideTbar();
+  
+  if (!pdfDoc) {
+    pdfjsLib.getDocument('ppt.pdf').promise.then(pdf => {
+      pdfDoc = pdf;
+      renderPage(pageNum);
+    }).catch(err => {
+      console.error(err);
+      showToast('❌', 'PDF Error', 'Ensure ppt.pdf is present.');
+    });
+  } else {
+    // If it's already loaded, just make sure we are showing the current page
+    document.getElementById(activeCanvas === 1 ? 'pdf-canvas-1' : 'pdf-canvas-2').style.opacity = 1;
+  }
+}
 
 // ════ CURSOR ════
 const curEl=document.getElementById('cur'), ca=document.getElementById('ca'), ch=document.getElementById('ch');
@@ -747,8 +813,8 @@ const APPS={
     html:`<div class="a-side"><div class="as-sec">Explorer</div><div class="as-item on">📄 intentos_kernel.js</div><div class="as-item">📄 memory_manager.js</div><div class="as-item">📄 storage_ctrl.js</div><div class="as-item">📁 /modules</div><div class="as-item" style="padding-left:20px">📄 ai_kernel.js</div><div class="as-item" style="padding-left:20px">📄 spotter.js</div><br><div class="as-sec">Outline</div><div class="as-item">fn initKernel()</div><div class="as-item">fn deepFreeze()</div><div class="as-item">fn resolveIntent()</div></div><div class="a-main"><div class="cl"><span class="ln">1</span><span class="cc">// IntentOS Kernel v1.0 — Lean-Core Architecture</span></div><div class="cl"><span class="ln">2</span><span class="cc">// Deep Freeze · Predictive Prefetch · Relational Object Store</span></div><div class="cl"><span class="ln">3</span></div><div class="cl"><span class="ln">4</span><span class="ck">import</span> { <span class="cv">MemoryManager</span>, <span class="cv">AIKernel</span>, <span class="cv">ObjectStore</span> } <span class="ck">from</span> <span class="cs">'./modules'</span>;</div><div class="cl"><span class="ln">5</span><span class="ck">const</span> <span class="cv">STICKY</span> = [<span class="cs">'voice_comm'</span>, <span class="cs">'music_player'</span>];</div><div class="cl"><span class="ln">6</span></div><div class="cl"><span class="ln">7</span><span class="ck">async function</span> <span class="cf">deepFreeze</span>(<span class="cv">task</span>) {</div><div class="cl"><span class="ln">8</span>  <span class="ck">const</span> <span class="cv">procs</span> = <span class="ck">await</span> <span class="cf">getRunning</span>();</div><div class="cl"><span class="ln">9</span>  <span class="cv">procs</span>.<span class="cf">filter</span>(<span class="cv">p</span> => <span class="cv">p</span>.id !== <span class="cv">task</span> && !<span class="cv">STICKY</span>.<span class="cf">includes</span>(<span class="cv">p</span>.id))</div><div class="cl"><span class="ln">10</span>      .<span class="cf">forEach</span>(<span class="cv">p</span> => <span class="cv">MemoryManager</span>.<span class="cf">suspend</span>(<span class="cv">p</span>));</div><div class="cl"><span class="ln">11</span>  <span class="ck">return</span> <span class="cv">MemoryManager</span>.<span class="cf">lockTo</span>(<span class="cv">task</span>);</div><div class="cl"><span class="ln">12</span>}</div><div class="cl"><span class="ln">13</span></div><div class="cl"><span class="ln">14</span><span class="ck">export async function</span> <span class="cf">resolveIntent</span>(<span class="cv">prompt</span>) {</div><div class="cl"><span class="ln">15</span>  <span class="ck">const</span> <span class="cv">intent</span> = <span class="ck">await</span> <span class="cv">AIKernel</span>.<span class="cf">parse</span>(<span class="cv">prompt</span>);</div><div class="cl"><span class="ln">16</span>  <span class="cf">prefetchAssets</span>(<span class="cv">intent</span>.<span class="cv">app</span>);</div><div class="cl"><span class="ln">17</span>  <span class="ck">if</span>(<span class="cv">intent</span>.<span class="cv">confidence</span> < <span class="cn">0.7</span>) <span class="ck">return</span> <span class="cf">showClarify</span>(<span class="cv">intent</span>);</div><div class="cl"><span class="ln">18</span>  <span class="ck">return</span> <span class="cf">execute</span>(<span class="cv">intent</span>);</div><div class="cl"><span class="ln">19</span>}</div></div>`},
   browser:{emoji:'🌐',title:'Browser — intentos.local',
     html:`<div style="display:flex;flex-direction:column;width:100%;height:100%"><div class="br-bar"><div class="br-btn">←</div><div class="br-btn">→</div><div class="br-url"><span style="color:var(--accent);margin-right:8px">🔒</span>intentos.local/docs/kernel-overview</div><div class="br-btn">↻</div></div><div class="br-body"><div style="font-size:48px">🌐</div><div style="font-size:20px;font-weight:700">IntentOS Documentation</div><div style="font-family:'Space Mono',monospace;font-size:12px;color:var(--dim)">intentos.local — Local Offline · Iron-Clad Enabled</div><div style="display:flex;gap:8px;margin-top:14px"><div class="chip">Kernel API</div><div class="chip">Memory Mgmt</div><div class="chip">Object Store</div><div class="chip">Security</div></div></div></div>`},
-  terminal:{emoji:'⚙️',title:'Terminal — root@intentos',
-    html:`<div class="term-body"><div style="color:var(--green);margin-bottom:3px">IntentOS Terminal v1.0 — Lean-Core Shell</div><div style="color:rgba(200,214,240,.28);margin-bottom:16px">Iron-Clad enabled · Offline-first · Type 'help' for commands</div><div style="color:rgba(200,214,240,.45);margin-bottom:5px"><span style="color:var(--green)">root@intentos</span><span style="color:var(--dim)">:~$</span> intent list-processes --verbose</div><div style="color:var(--dim);line-height:2;margin-bottom:16px"><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 001</span> kernel_core&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 120MB&nbsp; CPU: 2%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 002</span> ai_slm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 4.8GB&nbsp; CPU: 8%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 003</span> object_store&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 48MB&nbsp;&nbsp; CPU: 1%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 009</span> voice_comm&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--yellow)">★ STICKY&nbsp;</span>&nbsp; RAM: 22MB&nbsp;&nbsp; CPU: 0%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 014</span> self_heal&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--yellow)">★ IDLE&nbsp;&nbsp;&nbsp;</span>&nbsp; RAM: 4MB&nbsp;&nbsp;&nbsp; CPU: 0%</div></div><div style="color:rgba(200,214,240,.45);margin-bottom:5px"><span style="color:var(--green)">root@intentos</span><span style="color:var(--dim)">:~$</span> intent freeze --mode=focused</div><div style="color:var(--dim);margin-bottom:16px;line-height:1.9"><div style="color:var(--green)">✓ Deep Freeze activated — Focused Mode</div><div>&nbsp; Suspended 3 non-sticky processes</div><div>&nbsp; Locked 14.2 GB RAM → active task</div><div>&nbsp; CPU priority escalated: MAX</div><div>&nbsp; Self-Heal queued for idle window</div></div><div style="display:flex;align-items:center;gap:5px"><span style="color:var(--green)">root@intentos</span><span style="color:var(--dim)">:~$</span><span style="display:inline-block;width:8px;height:14px;background:var(--accent);animation:blink 1s step-end infinite"></span></div></div>`},
+  terminal:{emoji:'⚙️',title:'Terminal — xeon@intentos',
+    html:`<div class="term-body"><div style="color:var(--green);margin-bottom:3px">IntentOS Terminal v1.0 — Lean-Core Shell</div><div style="color:rgba(200,214,240,.28);margin-bottom:16px">Iron-Clad enabled · Offline-first · Type 'help' for commands</div><div style="color:rgba(200,214,240,.45);margin-bottom:5px"><span style="color:var(--green)">xeon@intentos</span><span style="color:var(--dim)">:~$</span> intent list-processes --verbose</div><div style="color:var(--dim);line-height:2;margin-bottom:16px"><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 001</span> kernel_core&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 120MB&nbsp; CPU: 2%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 002</span> ai_slm&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 4.8GB&nbsp; CPU: 8%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 003</span> object_store&nbsp;&nbsp;<span style="color:var(--green)">● RUNNING</span>&nbsp; RAM: 48MB&nbsp;&nbsp; CPU: 1%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 009</span> voice_comm&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--yellow)">★ STICKY&nbsp;</span>&nbsp; RAM: 22MB&nbsp;&nbsp; CPU: 0%</div><div><span style="color:var(--accent);min-width:80px;display:inline-block">PID 014</span> self_heal&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--yellow)">★ IDLE&nbsp;&nbsp;&nbsp;</span>&nbsp; RAM: 4MB&nbsp;&nbsp;&nbsp; CPU: 0%</div></div><div style="color:rgba(200,214,240,.45);margin-bottom:5px"><span style="color:var(--green)">xeon@intentos</span><span style="color:var(--dim)">:~$</span> intent freeze --mode=focused</div><div style="color:var(--dim);margin-bottom:16px;line-height:1.9"><div style="color:var(--green)">✓ Deep Freeze activated — Focused Mode</div><div>&nbsp; Suspended 3 non-sticky processes</div><div>&nbsp; Locked 14.2 GB RAM → active task</div><div>&nbsp; CPU priority escalated: MAX</div><div>&nbsp; Self-Heal queued for idle window</div></div><div style="display:flex;align-items:center;gap:5px"><span style="color:var(--green)">xeon@intentos</span><span style="color:var(--dim)">:~$</span><span style="display:inline-block;width:8px;height:14px;background:var(--accent);animation:blink 1s step-end infinite"></span></div></div>`},
   music:{emoji:'🎵',title:'Music Player — Local Library',
     html:`<div style="display:flex;flex-direction:column;width:100%;height:100%;align-items:center;justify-content:center;gap:20px;padding:30px"><div style="font-size:60px;animation:spin 8s linear infinite">💿</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style><div style="text-align:center"><div style="font-size:20px;font-weight:700">Synthwave · Focus Mix</div><div style="font-size:12px;color:var(--dim);font-family:'Space Mono',monospace;margin-top:4px">Local Library · 47 tracks · Iron-Clad: no streaming</div></div><div style="width:360px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden"><div style="width:38%;height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;box-shadow:0 0 10px rgba(0,229,255,.4)"></div></div><div style="display:flex;gap:12px;align-items:center"><div class="chip">⏮</div><div class="chip" style="color:var(--accent);border-color:rgba(0,229,255,.3)">⏸</div><div class="chip">⏭</div></div><div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);padding:8px 14px;background:rgba(255,204,0,.06);border:1px solid rgba(255,204,0,.15);border-radius:7px">★ Sticky Process — active during Deep Freeze</div></div>`},
   files:{emoji:'🗂️',title:'Object Store — Semantic Search',
@@ -846,7 +912,6 @@ function pickClarify(app){
   const labels={editor:'Code Editor',files:'Object Store',terminal:'Terminal'};
   launchApp(app,labels[app]);
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('clarify').classList.remove('show');closePanels();}});
 
 // ════ LAUNCH ════
 function launchApp(id,label){
@@ -856,7 +921,7 @@ function launchApp(id,label){
   r.classList.remove('go');void r.offsetWidth;r.classList.add('go');
   setTimeout(()=>{
     const app=APPS[id];
-    document.getElementById('base').classList.add('off');
+    document.getElementById('base').style.display='none';
     document.getElementById('appV').classList.add('on');
     document.getElementById('appNm').innerHTML=`<span style="color:var(--accent2)">${app.emoji} ${app.title.split('—')[0].trim()}</span> <span style="font-weight:400;color:var(--dim)">— ${app.title.split('—')[1]?.trim()||''}</span>`;
     document.getElementById('appBd').innerHTML=app.html;
@@ -909,14 +974,34 @@ document.getElementById('btnClose').addEventListener('click',goHome);
 document.getElementById('tbHome').addEventListener('click',goHome);
 function goHome(){
   document.getElementById('appV').classList.remove('on');
+  document.getElementById('base').style.display='flex';
   document.getElementById('base').classList.remove('off');
   appMode=false;curApp=null;openApps=[];
   hideTbar();document.getElementById('fbar').classList.remove('off');
   tbIn.value='';tbDrop.style.display='none';
 }
 
-// ════ KEYBOARD ════
+// ════ KEYBOARD & PRESENTATION LOGIC ════
 document.addEventListener('keydown',e=>{
+  // Presentation Nav Logic
+  const pMode = document.getElementById('presentation-mode');
+  if (pMode && pMode.style.display === 'flex') {
+    if (e.key === 'ArrowRight' && pdfDoc && pageNum < pdfDoc.numPages) {
+      pageNum++; queueRenderPage(pageNum);
+    }
+    if (e.key === 'ArrowLeft' && pdfDoc && pageNum > 1) {
+      pageNum--; queueRenderPage(pageNum);
+    }
+    if (e.key === 'Escape') {
+      pMode.style.display = 'none';
+      document.getElementById('base').style.display = 'flex'; 
+      document.getElementById('base').classList.remove('off');
+      cIn.value = '';
+    }
+    return; // Don't trigger other shortcuts while presenting
+  }
+
+  // Regular OS Logic
   if((e.metaKey||e.ctrlKey)&&e.code==='Space'){e.preventDefault();cIn.focus();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();if(appMode)tbIn.focus();}
   if((e.metaKey||e.ctrlKey)&&e.key==='d'){e.preventDefault();if(appMode)goHome();}
